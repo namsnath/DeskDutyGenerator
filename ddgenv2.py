@@ -19,6 +19,10 @@ ______________________________________________________
 ################################################## Constants ##################################################
 
 slotsPerDay = 11
+dayCount = 5
+buildings = 2
+dutiesPerBuilding = 2
+
 days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
 seniorCore = ['Atul', 'Ayush', 'Charu', 'Kabiir', 'Krityaan', 'Manisha', 'Namit', 'Pavithra', 'Rishab', 'Saksham', 'Sakshi', 'Sarthak', 'Saurav', 'Simran', 'Sonal']
 juniorCore = ['Aban', 'Aradhita', 'Bhavishya', 'Chinmay', 'David', 'Devam', 'Fardeen', 'Gauri', 'Kuhoo', 'Lakshay', 'Manan', 'Prajeeth', 'Rama', 'Rishit', 'Rohan', 'Ruchica', 
@@ -59,13 +63,23 @@ fit = []
 
 ################################################## Functions ##################################################
 
-def generateDuty(peeps=None, duty=None):
-	x=1
+def getPerson():
+	return random.choice(core)
+
+def createChromosome():
+	length = dayCount * maxSlots["daily"] * buildings * dutiesPerBuilding
+
+	chromosome = []
+	for i in range(length):
+		chromosome.append(getPerson())
+	
+	return chromosome
+
 
 ################################################## Functions ##################################################
 
 ################################################## Run ##################################################
 
-
+print(createChromosome())
 
 ################################################## Run ##################################################
