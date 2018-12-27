@@ -57,7 +57,7 @@ points = {
 
 
 highestScore = 0
-highest = []
+highest = 0
 population = []
 fit = []
 
@@ -76,6 +76,12 @@ def createChromosome():
 		chromosome.append(getPerson())
 	
 	return chromosome
+
+def generatePopulation(count):
+	global population
+
+	for i in range(count):
+		population.append(createChromosome())
 
 def calculateScore(chromosome):
 	score = 0
@@ -100,13 +106,24 @@ def calculateScore(chromosome):
 
 	return score
 
+def calculatePopulationScores():
+	global population
+	avg = 0
+
+	for i in range(len(population)):
+		score = calculateScore(population[i])
+		avg += score
+		print(i, score)
+
+	avg /= len(population) 	
+	print("Average = ", avg)
+
 
 ################################################## Functions ##################################################
 
 ################################################## Run ##################################################
 
-chrom = createChromosome()
-score = calculateScore(chrom)
-print(score)
+generatePopulation(5)
+calculatePopulationScores()
 
 ################################################## Run ##################################################
