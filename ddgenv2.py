@@ -21,15 +21,19 @@ ______________________________________________________
 slotsPerDay = 11
 dutySlotsPerDay = 8
 dayCount = 5
-buildings = 2
+buildingCount = 2
 dutiesPerBuilding = 2
 
 POPULATION_SIZE = 8000
 GENERATIONS = 40
 CHILDREN_MULTIPLIER = 0.1
-chromosomeLength = dutySlotsPerDay * dayCount * buildings * dutiesPerBuilding
+chromosomeLength = dutySlotsPerDay * dayCount * buildingCount * dutiesPerBuilding
 
 days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+slots = ["8-9", "9-10", "10-11", "11-12", "12-1", "2-3", "3-4", "4-5"]
+buildings = ["SJT", "TT"]
+duties = [1, 2]
+
 seniorCore = ['Atul', 'Ayush', 'Charu', 'Kabiir', 'Krityaan', 'Manisha', 'Namit', 'Pavithra', 'Rishab', 'Saksham', 'Sakshi', 'Sarthak', 'Saurav', 'Simran', 'Sonal']
 juniorCore = ['Aban', 'Aradhita', 'Bhavishya', 'Chinmay', 'David', 'Devam', 'Fardeen', 'Gauri', 'Kuhoo', 'Lakshay', 'Manan', 'Prajeeth', 'Rama', 'Rishit', 'Rohan', 'Ruchica', 
 			'Sanjana', 'SauravH', 'Siddharth', 'Suranjan', 'Taarussh', 'Tajendar', 'Tanya', 'Thiru', 'Vaishnavi']
@@ -89,7 +93,7 @@ def getFreePeople(day, slot):
 
 def calculateDetails(n):
 	dutyIndex = dutiesPerBuilding
-	bldgIndex = dutyIndex * buildings
+	bldgIndex = dutyIndex * buildingCount
 	slotIndex = bldgIndex * dutySlotsPerDay
 	dayIndex = slotIndex * dayCount
 
@@ -105,7 +109,7 @@ def createEmptyChromosome():
 	return {"chromosome": [], "score": 0}
 
 def createChromosomeMaterial():
-	# length = dayCount * dutySlotsPerDay * buildings * dutiesPerBuilding
+	# length = dayCount * dutySlotsPerDay * buildingCount * dutiesPerBuilding
 
 	chromosome = []
 	for i in range(chromosomeLength):
@@ -267,7 +271,7 @@ def algorithm():
 	# pprint(fittest)
 
 	dutyIndex = dutiesPerBuilding
-	bldgIndex = dutyIndex * buildings
+	bldgIndex = dutyIndex * buildingCount
 	slotIndex = bldgIndex * dutySlotsPerDay
 	dayIndex = slotIndex * dayCount
 
@@ -309,5 +313,14 @@ def findFittest(population):
 ################################################## Run ##################################################
 
 algorithm()
+
+# dutyIndex = dutiesPerBuilding
+# bldgIndex = dutyIndex * buildingCount
+# slotIndex = bldgIndex * dutySlotsPerDay
+# dayIndex = slotIndex * dayCount
+# for i in range(chromosomeLength):
+# 	det = list(calculateDetails(i))
+
+# 	print(i, det, det[0]*8*2*2 + det[1]*2*2 + det[2]*2 + det[3]*1)
 
 ################################################## Run ##################################################
