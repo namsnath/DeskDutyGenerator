@@ -6,7 +6,7 @@ import random, re, json
 
 """
 Chromosome:
-						Slots
+		0-160 (Day-5 Slot-8 Bldg-2 Duty-2)
 ______________________________________________________
 					People Assigned
 ______________________________________________________
@@ -68,7 +68,10 @@ fit = []
 def getPerson():
 	return random.choice(core)
 
-def createChromosome():
+def createEmptyChromosome():
+	return {"chromosome": [], "score": 0}
+
+def createChromosomeMaterial():
 	length = dayCount * dutySlotsPerDay * buildings * dutiesPerBuilding
 
 	chromosome = []
@@ -78,10 +81,14 @@ def createChromosome():
 	return chromosome
 
 def generatePopulation(count):
-	global population
+	population = []
 
 	for i in range(count):
-		population.append(createChromosome())
+		cr = createEmptyChromosome()
+		cr["chromosome"] = createChromosomeMaterial()
+		population.append(cr)
+
+	return population	
 
 def calculateScore(chromosome):
 	score = 0
@@ -106,24 +113,56 @@ def calculateScore(chromosome):
 
 	return score
 
-def calculatePopulationScores():
-	global population
+def calculatePopulationScores(population):
 	avg = 0
 
-	for i in range(len(population)):
-		score = calculateScore(population[i])
+	maxLen = len(population)
+
+	for i in range(0, maxLen):
+		data = population[i]
+
+		score = calculateScore(data["chromosome"])
+		population[i]["score"] = score
 		avg += score
 		print(i, score)
 
-	avg /= len(population) 	
+	avg /= len(population)
 	print("Average = ", avg)
+
+	return population
+
+def selection(population):
+	newPopulation = []
+
+	FIT_RETENTION = 0.3
+	RANDOM_RETENTION = 0.2
+
+	fitCount = int(FIT_RETENTION * len(population))
+	randCount = int(RANDOM_RETENTION * len(population))
+
+	print("\nFIT = ", fitCount, "\nRANDOM = ", randCount)
+
+	population.sort(key=lambda k: k["score"], reverse=True)
+	
+	for i in range(fitCount):
+		newPopulation.append(population[i])
+	
+	for i in range(randCount):
+		newPopulation.append(random.choice(population))
+
+	return newPopulation	
 
 
 ################################################## Functions ##################################################
 
 ################################################## Run ##################################################
 
-generatePopulation(5)
-calculatePopulationScores()
+pop = generatePopulation(10)
+pop = calculatePopulationScores(pop)
 
+newPoop = selection(pop)
+# pprint(newPoop)
+
+print("\n\nNEW POOP")
+newPoop = calculatePopulationScores(newPoop)
 ################################################## Run ##################################################
