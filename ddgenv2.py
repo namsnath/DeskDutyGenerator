@@ -87,6 +87,7 @@ fit = []
 
 ################################################## Functions ##################################################
 
+# Function to generate the sameDay and sameSlot lists
 def generateSameList():
 	i = 0
 	while i < chromosomeLength:
@@ -103,31 +104,22 @@ def generateSameList():
 	# pprint(sameSlot)
 	# pprint(sameDay)
 
-
+# Function to generate data about the one-hour breaks of each person
 def generateSingleBreakData():
-	global dayCount, dutySlotsPerDay, buildingCount, dutiesPerBuilding, singleBreaks, singleBreaksFlat
-	dayIndex = dutySlotsPerDay*buildingCount*dutiesPerBuilding
-	slotIndex = buildingCount*dutiesPerBuilding
-
 	for k in core:
 		if k in coreData:
 			tt = coreData[k]
-
-			breaks = [[], [], [], [], []]
 			breaksFlat = []
 
 			for j in range(dayCount):
 				for i in range(dutySlotsPerDay - 1):
 					if  tt[j][i] == "" and ((i == 0) or (tt[j][i - 1] != "" and tt[j][i + 1] != "")):
-						breaks[j].append(k)
-						breaksFlat.append(dayIndex*j + slotIndex*i)
+						breaksFlat.append(DAY_INDEX*j + SLOT_INDEX*i)
 
 			singleBreaksFlat[k] = breaksFlat			
-			singleBreaks[k] = breaks
-
-	# pprint(singleBreaksFlat)		
-
-
+	
+# Generates a list of people free in the given day and slot
+# TODO make this into a static array to avoid recalculations
 def findFree(day, slot):
 	peeps = []
 
@@ -137,14 +129,17 @@ def findFree(day, slot):
 
 	return peeps		
 
+# Function to get the free people in the given day and slot
 def getFreePeople(day, slot):
 	peeps = findFree(day, slot)
 	return peeps
 
+# Function to return a random free person for the given day and slot
 def getPerson(day, slot):
 	freePeeps = getFreePeople(day, slot)
 	return random.choice(freePeeps)
 
+# Helper function to calculate the values for day, slot, bldg and duty for each gene
 def generateDetails():
 	global details
 
@@ -162,14 +157,16 @@ def generateDetails():
 
 	# pprint(details)	
 
-
+# Function to return calculated details for day, slot, bldg, duty
 def calculateDetails(n):
 	global details
 	return details[n]
 
+# Function to initiate a chromosome
 def createEmptyChromosome():
 	return {"chromosome": [], "score": 0}
 
+# Function to populate the chromosome
 def createChromosomeMaterial():
 	# length = dayCount * dutySlotsPerDay * buildingCount * dutiesPerBuilding
 
@@ -180,6 +177,7 @@ def createChromosomeMaterial():
 	
 	return chromosome
 
+# Generates the given number of chromosomes for the population
 def generatePopulation(count):
 	population = []
 
@@ -227,6 +225,7 @@ def totalSlotsScore(chromosome, person):
 		score += points["total"]
 	return score
 
+# Function to calculate the fitness of each person in the timetable (slot limit and slot clash)
 def personFitness(chromosome, person):
 	score = 0
 	dayValid = True
@@ -237,6 +236,7 @@ def personFitness(chromosome, person):
 
 	return score
 
+# Function to calculate the total fitness of the chromosome
 def calculateScore(chromosome):
 	score = 0
 
@@ -248,6 +248,7 @@ def calculateScore(chromosome):
 
 	return score
 
+# Function to calculate the fitness of each chromosome in the population and display details
 def calculatePopulationScores(population):
 	avg = 0
 
@@ -266,16 +267,15 @@ def calculatePopulationScores(population):
 
 	return population
 
+# Function for selection of the population
 def selection(population):
 	newPopulation = []
 
-	FIT_RETENTION = 0.3
-	RANDOM_RETENTION = 0.2
+	FIT_RETENTION = 0.3		# Percentage of fit population to be retained
+	RANDOM_RETENTION = 0.2	# Percentage of random population to be selected
 
 	fitCount = int(FIT_RETENTION * len(population))
 	randCount = int(RANDOM_RETENTION * len(population))
-
-	# print("\nFIT = ", fitCount, "\nRANDOM = ", randCount)
 
 	population.sort(key=lambda k: k["score"], reverse=True)
 	
@@ -287,6 +287,8 @@ def selection(population):
 
 	return newPopulation	
 
+# Function to crossover two parents in a simple 50-50 fashion.
+# TODO Edit to either alternate or do a different crossover mechanism
 def crossover(p1, p2):
 	global chromosomeLength
 
@@ -303,6 +305,8 @@ def crossover(p1, p2):
 
 	return child
 
+# Function to initiate a crossover
+# Selects random parents and calls the crossover(...) function
 def doCrossover(population):
 	p1 = random.choice(population)
 	p2 = random.choice(population)
@@ -311,6 +315,8 @@ def doCrossover(population):
 
 	return child
 
+# Function to mutate a random gene in the chromosome
+# TODO add more mutations?
 def mutation(item):
 	geneNumber = int(random.random() * chromosomeLength)
 	det = calculateDetails(geneNumber)
@@ -320,11 +326,16 @@ def mutation(item):
 
 	return item
 
+# Function to select a random chromosome to mutate
+# Calls the mutation(...) function
 def doMutation(population):
 	item = int(random.random() * len(population))
-
 	population[item] = mutation(population[item])
 
+# Function to proceed through a generation
+# Selection
+# Reproduction
+# Mutation of each child
 def generation(population):
 	selected = selection(population)
 	if not len(selected) > 0:
@@ -335,9 +346,7 @@ def generation(population):
 
 	while len(children) <= childrenCount:
 		child = doCrossover(population)
-
 		child = mutation(child)
-
 		children.append(child)
 
 	newPopulation = selected + children
@@ -347,6 +356,8 @@ def generation(population):
 
 	return newPopulation
 
+# Function to control the GA
+# Generates population and runs through the defined generations
 def algorithm():
 	global POPULATION_SIZE
 	global GENERATIONS
@@ -374,7 +385,8 @@ def algorithm():
 
 	print("Proper: ")
 	printProperly(fittest)
-			 
+
+# Function to find the average score of the population and print it			 
 def findAverage(population):
 	total = 0
 	for i in population:
@@ -383,6 +395,7 @@ def findAverage(population):
 
 	print("Average Score = ", avg)	
 
+# Function to find the fittest chromosome in the population
 def findFittest(population):
 	population.sort(key=lambda k: k["score"], reverse=True)
 
@@ -390,6 +403,7 @@ def findFittest(population):
 	print("Fittest Score = ", population[0]["score"])
 	return population[0]
 
+# Function to print the chromosome in human-readable format
 def printProperly(chromosome):
 	global days, slots, buildings
 
@@ -408,9 +422,6 @@ def printProperly(chromosome):
 		duties[days[det[0]]][slots[det[1]]][buildings[det[2]]][det[3]] = chromosome[i]
 
 	pprint(duties)	
-
-def countDuties(chromosome):
-	x = 1
 
 ################################################## Functions ##################################################
 
