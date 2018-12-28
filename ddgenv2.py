@@ -24,6 +24,9 @@ dayCount = 5
 buildings = 2
 dutiesPerBuilding = 2
 
+POPULATION_SIZE = 8000
+GENERATIONS = 40
+CHILDREN_MULTIPLIER = 0.1
 chromosomeLength = dutySlotsPerDay * dayCount * buildings * dutiesPerBuilding
 
 days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
@@ -67,8 +70,36 @@ fit = []
 
 ################################################## Functions ##################################################
 
-def getPerson():
-	return random.choice(core)
+def findFree(day, slot):
+	peeps = []
+
+	for i in core:
+		if i in coreData and coreData[i][day][slot] == "":
+			peeps.append(i)
+
+	return peeps		
+
+def getPerson(day, slot):
+	freePeeps = getFreePeople(day, slot)
+	return random.choice(freePeeps)
+
+def getFreePeople(day, slot):
+	peeps = findFree(day, slot)
+	return peeps
+
+def calculateDetails(n):
+	dutyIndex = dutiesPerBuilding
+	bldgIndex = dutyIndex * buildings
+	slotIndex = bldgIndex * dutySlotsPerDay
+	dayIndex = slotIndex * dayCount
+
+	
+	day = int((n % dayIndex) / slotIndex)
+	slot = (int(n % slotIndex / bldgIndex))
+	bldg = (int(n % bldgIndex / dutyIndex))
+	duty = (int(n % dutyIndex))
+
+	return (day, slot, bldg, duty)	
 
 def createEmptyChromosome():
 	return {"chromosome": [], "score": 0}
@@ -78,7 +109,8 @@ def createChromosomeMaterial():
 
 	chromosome = []
 	for i in range(chromosomeLength):
-		chromosome.append(getPerson())
+		det = calculateDetails(i)
+		chromosome.append(getPerson(det[0], det[1]))
 	
 	return chromosome
 
@@ -95,16 +127,12 @@ def generatePopulation(count):
 def calculateScore(chromosome):
 	score = 0
 
-	dutyIndex = dutiesPerBuilding
-	bldgIndex = dutyIndex * buildings
-	slotIndex = bldgIndex * dutySlotsPerDay
-	dayIndex = slotIndex * dayCount
-
 	for i in range(chromosomeLength):
-		day = int((i % dayIndex) / slotIndex)
-		slot = (int(i % slotIndex / bldgIndex))
-		bldg = (int(i % bldgIndex / dutyIndex))
-		duty = (int(i % dutyIndex))
+		det = calculateDetails(i)
+		day = det[0]
+		slot = det[1]
+		bldg = det[2]
+		duty = det[3]
 
 		# print(i, chromosome[i])
 		# print(day, slot, bldg, duty)
@@ -112,6 +140,8 @@ def calculateScore(chromosome):
 
 		if chromosome[i] in coreData and coreData[chromosome[i]][day][slot] == "":
 			score += points["free"]
+		else:
+			score -= points["free"]	
 
 	return score
 
@@ -126,7 +156,7 @@ def calculatePopulationScores(population):
 		score = calculateScore(data["chromosome"])
 		population[i]["score"] = score
 		avg += score
-		print(i, score)
+		# print(i, score)
 
 	avg /= len(population)
 	print("Average = ", avg)
@@ -142,7 +172,7 @@ def selection(population):
 	fitCount = int(FIT_RETENTION * len(population))
 	randCount = int(RANDOM_RETENTION * len(population))
 
-	print("\nFIT = ", fitCount, "\nRANDOM = ", randCount)
+	# print("\nFIT = ", fitCount, "\nRANDOM = ", randCount)
 
 	population.sort(key=lambda k: k["score"], reverse=True)
 	
@@ -173,21 +203,14 @@ def doCrossover(population):
 
 	child = crossover(p1, p2)
 
-	# print(p1)
-	# print(p2)
-	# print(child)
-
 	return child
 
 def mutation(item):
 	geneNumber = int(random.random() * chromosomeLength)
-	print("\nModifying gene #", geneNumber)
-	print("Original: ", item["chromosome"][geneNumber], item["score"])
+	det = calculateDetails(geneNumber)
 
-	item["chromosome"][geneNumber] = getPerson()
+	item["chromosome"][geneNumber] = getPerson(det[0], det[1])
 	item["score"] = calculateScore(item["chromosome"])
-
-	print("New: ", item["chromosome"][geneNumber], item["score"])
 
 	return item
 
@@ -196,23 +219,95 @@ def doMutation(population):
 
 	population[item] = mutation(population[item])
 
+def generation(population):
+	selected = selection(population)
+	if not len(selected) > 0:
+		return population
+
+	children = []
+	childrenCount = int(CHILDREN_MULTIPLIER * len(selected))
+
+	while len(children) <= childrenCount:
+		child = doCrossover(population)
+
+		child = mutation(child)
+
+		children.append(child)
+
+	newPopulation = selected + children
+
+	if not len(newPopulation) > 0:
+		return population
+
+	return newPopulation
+
+def algorithm():
+	global POPULATION_SIZE
+	global GENERATIONS
+
+	population = generatePopulation(POPULATION_SIZE)
+	population = calculatePopulationScores(population)
+
+
+	# while len(population) > 2:
+	for i in range(GENERATIONS):
+		print("\nGENERATION #", i)
+		
+		population = generation(population)
+		calculatePopulationScores(population)
+		print("Population Length = ", len(population))
+
+		findAverage(population)
+		findFittest(population)	
+
+	print("\n\nFinally, ")
+	findAverage(population)
+	fittest = findFittest(population)["chromosome"]
+	# print("Fittest = ")
+	# pprint(fittest)
+
+	dutyIndex = dutiesPerBuilding
+	bldgIndex = dutyIndex * buildings
+	slotIndex = bldgIndex * dutySlotsPerDay
+	dayIndex = slotIndex * dayCount
+
+	for i in range(chromosomeLength):
+		day = int((i % dayIndex) / slotIndex)
+		slot = (int(i % slotIndex / bldgIndex))
+		bldg = (int(i % bldgIndex / dutyIndex))
+		duty = (int(i % dutyIndex))
+
+		# print(i, chromosome[i])
+		# print(day, slot, bldg, duty)
+		# print(day+1, slot+1, bldg+1, duty+1)
+
+		if fittest[i] in coreData and coreData[fittest[i]][day][slot] == "":
+			print(fittest[i], " Free")
+		else:
+			print(fittest[i], " Not Free")	
+
+
+			 
+def findAverage(population):
+	total = 0
+	for i in population:
+		total += i["score"]
+	avg = total / len(population)
+
+	print("Average Score = ", avg)	
+
+def findFittest(population):
+	population.sort(key=lambda k: k["score"], reverse=True)
+
+	# print("Fittest = ", population[0]["chromosome"])
+	print("Fittest Score = ", population[0]["score"])
+	return population[0]
+
 
 ################################################## Functions ##################################################
 
 ################################################## Run ##################################################
 
-pop = generatePopulation(10)
-pop = calculatePopulationScores(pop)
-
-newPoop = selection(pop)
-# pprint(newPoop)
-
-print("\n\nNEW POOP")
-newPoop = calculatePopulationScores(newPoop)
-
-doCrossover(newPoop)
-
-doMutation(newPoop)
-
+algorithm()
 
 ################################################## Run ##################################################
