@@ -190,38 +190,50 @@ def generatePopulation(count):
 
 	return population	
 
+# Returns the intersection of two lists
 def intersection(l1, l2):
 	return list(set(l1) & set(l2))
 
-def checkClash(chromosome, person):
+# Function to calculate the score for clashes in the duty assignment 
+# Clarification: places where the same person has multiple duties in the same slot
+def slotClashScore(chromosome, person):
 	indices = [i for i, x in enumerate(chromosome) if x == person]
-	# pprint(indices)
-
+	
 	score = 0
 
 	for i in sameSlot:
 		intersect = intersection(indices, i)
-		# print(intersect)
 		if len(intersect) > 1:
 			score += points["clash"] * len(intersect)
 	
 	return score
 
-def personFitness(chromosome, person):
+# Function to calculate score for the maximum daily slots limit
+def totalDailyScore(chromosome, person):
 	score = 0
-	dayValid = True
 	indices = [i for i, x in enumerate(chromosome) if x == person]
-
-	if chromosome.count(person) <= maxSlots["total"]:
-		score += points["total"]
-
-	score += checkClash(chromosome, person)
 
 	for i in sameDay:
 		intersect = intersection(indices, i)
 
 		if len(intersect) <= maxSlots["daily"]:
 			score += points["daily"]
+	return score	
+
+# Function to calculate score for the maximum total slots limit
+def totalSlotsScore(chromosome, person):
+	score = 0
+	if chromosome.count(person) <= maxSlots["total"]:
+		score += points["total"]
+	return score
+
+def personFitness(chromosome, person):
+	score = 0
+	dayValid = True
+
+	score += totalSlotsScore(chromosome, person)
+	score += totalDailyScore(chromosome, person)
+	score += slotClashScore(chromosome, person)
 
 	return score
 
@@ -410,6 +422,6 @@ generateDetails()
 algorithm()
 
 # cr = createChromosomeMaterial()
-# s = checkClash(cr, "Namit")
+# s = slotClashScore(cr, "Namit")
 # print(s)
 ################################################## Run ##################################################
