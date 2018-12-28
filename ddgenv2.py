@@ -73,7 +73,7 @@ points = {
 	# "fullDuty": 20.0,
 	# "empty": -20.0,
 	"venue": 1.0,
-	"clash": -2.0,
+	"clash": -4.0,
 }
 
 
@@ -127,24 +127,6 @@ def generateSingleBreakData():
 
 	# pprint(singleBreaksFlat)		
 
-def generateTabular(chromosome):
-	global days, slots, buildings
-
-	duties = []
-	for i in range(dayCount):
-		duties.append([])
-		for j in range(dutySlotsPerDay):
-			duties[i].append([])
-			for k in range(buildingCount):
-				duties[i][j].append([])
-				for l in range(dutiesPerBuilding):
-					duties[i][j][k].append("")
-
-	for i in range(chromosomeLength):
-		det = calculateDetails(i)
-		duties[det[0]][det[1]][det[2]][det[3]] = chromosome[i]
-
-	return duties
 
 def findFree(day, slot):
 	peeps = []
@@ -225,38 +207,29 @@ def checkClash(chromosome, person):
 	
 	return score
 
-
-def personFitness(chromosome, person, table):
+def personFitness(chromosome, person):
 	score = 0
 	dayValid = True
+	indices = [i for i, x in enumerate(chromosome) if x == person]
 
 	if chromosome.count(person) <= maxSlots["total"]:
 		score += points["total"]
 
-	# for i in range(dayCount):
-	# 	dailyDutyCount = 0
-	# 	for j in range(dutySlotsPerDay):
-	# 		for k in range(buildingCount):
-	# 			for l in range(dutiesPerBuilding):
-	# 				if table[i][j][k][l] == person:
-	# 					dailyDutyCount += 1
-		
-	# 	if dailyDutyCount <= maxSlots["daily"]:
-	# 		score += points["daily"]
-
 	score += checkClash(chromosome, person)
 
-	for i in range(chromosomeLength):
-		det = calculateDetails(i)
+	for i in sameDay:
+		intersect = intersection(indices, i)
+
+		if len(intersect) <= maxSlots["daily"]:
+			score += points["daily"]
 
 	return score
 
 def calculateScore(chromosome):
 	score = 0
-	table = generateTabular(chromosome)
 
 	for i in coreData:
-		score += personFitness(chromosome, i, table)
+		score += personFitness(chromosome, i)
 
 	for i in range(chromosomeLength):
 		x = 1
