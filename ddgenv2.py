@@ -24,6 +24,8 @@ dayCount = 5
 buildings = 2
 dutiesPerBuilding = 2
 
+chromosomeLength = dutySlotsPerDay * dayCount * buildings * dutiesPerBuilding
+
 days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
 seniorCore = ['Atul', 'Ayush', 'Charu', 'Kabiir', 'Krityaan', 'Manisha', 'Namit', 'Pavithra', 'Rishab', 'Saksham', 'Sakshi', 'Sarthak', 'Saurav', 'Simran', 'Sonal']
 juniorCore = ['Aban', 'Aradhita', 'Bhavishya', 'Chinmay', 'David', 'Devam', 'Fardeen', 'Gauri', 'Kuhoo', 'Lakshay', 'Manan', 'Prajeeth', 'Rama', 'Rishit', 'Rohan', 'Ruchica', 
@@ -72,10 +74,10 @@ def createEmptyChromosome():
 	return {"chromosome": [], "score": 0}
 
 def createChromosomeMaterial():
-	length = dayCount * dutySlotsPerDay * buildings * dutiesPerBuilding
+	# length = dayCount * dutySlotsPerDay * buildings * dutiesPerBuilding
 
 	chromosome = []
-	for i in range(length):
+	for i in range(chromosomeLength):
 		chromosome.append(getPerson())
 	
 	return chromosome
@@ -98,7 +100,7 @@ def calculateScore(chromosome):
 	slotIndex = bldgIndex * dutySlotsPerDay
 	dayIndex = slotIndex * dayCount
 
-	for i in range(len(chromosome)):
+	for i in range(chromosomeLength):
 		day = int((i % dayIndex) / slotIndex)
 		slot = (int(i % slotIndex / bldgIndex))
 		bldg = (int(i % bldgIndex / dutyIndex))
@@ -153,8 +155,8 @@ def selection(population):
 	return newPopulation	
 
 def crossover(p1, p2):
-	chromosomeLength = len(p1["chromosome"])
-	print("Chromosome length = ", chromosomeLength)
+	global chromosomeLength
+
 	p1MaterialLength = int(0.5 * chromosomeLength)
 	p2MaterialLength = int(0.5 * chromosomeLength)
 
@@ -171,11 +173,29 @@ def doCrossover(population):
 
 	child = crossover(p1, p2)
 
-	print(p1)
-	print(p2)
-	print(child)
+	# print(p1)
+	# print(p2)
+	# print(child)
 
 	return child
+
+def mutation(item):
+	geneNumber = int(random.random() * chromosomeLength)
+	print("\nModifying gene #", geneNumber)
+	print("Original: ", item["chromosome"][geneNumber], item["score"])
+
+	item["chromosome"][geneNumber] = getPerson()
+	item["score"] = calculateScore(item["chromosome"])
+
+	print("New: ", item["chromosome"][geneNumber], item["score"])
+
+	return item
+
+def doMutation(population):
+	item = int(random.random() * len(population))
+
+	population[item] = mutation(population[item])
+
 
 ################################################## Functions ##################################################
 
@@ -191,5 +211,8 @@ print("\n\nNEW POOP")
 newPoop = calculatePopulationScores(newPoop)
 
 doCrossover(newPoop)
+
+doMutation(newPoop)
+
 
 ################################################## Run ##################################################
