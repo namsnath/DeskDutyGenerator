@@ -152,6 +152,30 @@ def selection(population):
 
 	return newPopulation	
 
+def crossover(p1, p2):
+	chromosomeLength = len(p1["chromosome"])
+	print("Chromosome length = ", chromosomeLength)
+	p1MaterialLength = int(0.5 * chromosomeLength)
+	p2MaterialLength = int(0.5 * chromosomeLength)
+
+	child = createEmptyChromosome()
+
+	child["chromosome"] = p1["chromosome"][:p1MaterialLength] + p2["chromosome"][p1MaterialLength:]
+	child["score"] = calculateScore(child["chromosome"])
+
+	return child
+
+def doCrossover(population):
+	p1 = random.choice(population)
+	p2 = random.choice(population)
+
+	child = crossover(p1, p2)
+
+	print(p1)
+	print(p2)
+	print(child)
+
+	return child
 
 ################################################## Functions ##################################################
 
@@ -165,4 +189,7 @@ newPoop = selection(pop)
 
 print("\n\nNEW POOP")
 newPoop = calculatePopulationScores(newPoop)
+
+doCrossover(newPoop)
+
 ################################################## Run ##################################################
