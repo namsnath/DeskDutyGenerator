@@ -1,6 +1,7 @@
 import numpy
 from pprint import pprint
 import random, re, json
+from collections import Counter
 
 ################################################## Doodling ##################################################
 
@@ -24,10 +25,17 @@ dayCount = 5
 buildingCount = 2
 dutiesPerBuilding = 2
 
+DAY_INDEX = dutySlotsPerDay * buildingCount * dutiesPerBuilding
+SLOT_INDEX = buildingCount * dutiesPerBuilding
+BLDG_INDEX = dutiesPerBuilding
+DUTY_INDEX = 1
+
 POPULATION_SIZE = 8000
 GENERATIONS = 40
-CHILDREN_MULTIPLIER = 0.1
+CHILDREN_MULTIPLIER = 0.4
 chromosomeLength = dutySlotsPerDay * dayCount * buildingCount * dutiesPerBuilding
+
+details = []
 
 days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
 slots = ["8-9", "9-10", "10-11", "11-12", "12-1", "2-3", "3-4", "4-5"]
@@ -46,6 +54,10 @@ data = open("coreData.txt")
 coreData = json.loads(data.read())
 
 singleBreaks = {i: None for i in core}
+singleBreaksFlat = {i: None for i in core}
+
+sameSlot = []
+sameDay = []
 
 maxSlots = {
 	"total": 8,
@@ -53,14 +65,15 @@ maxSlots = {
 }
 
 points = {
-	"free": 1.0,
+	# "free": 1.0,
 	"total": 0.4,
 	"daily": 0.5,
-	"singleBreak": 2.0,
+	"singleBreak": 7.0,
 	"doubleBreak": 0.5,
-	"fullDuty": 20.0,
+	# "fullDuty": 20.0,
+	# "empty": -20.0,
 	"venue": 1.0,
-	"empty": -20.0,
+	"clash": -2.0,
 }
 
 
@@ -74,6 +87,65 @@ fit = []
 
 ################################################## Functions ##################################################
 
+def generateSameList():
+	i = 0
+	while i < chromosomeLength:
+		slots = [j for j in range(i, i + SLOT_INDEX)]
+		sameSlot.append(slots)
+		i += 4
+
+	i = 0
+	while i < chromosomeLength:
+		d = [j for j in range(i, i + DAY_INDEX)]
+		sameDay.append(d)
+		i += 32	
+
+	# pprint(sameSlot)
+	# pprint(sameDay)
+
+
+def generateSingleBreakData():
+	global dayCount, dutySlotsPerDay, buildingCount, dutiesPerBuilding, singleBreaks, singleBreaksFlat
+	dayIndex = dutySlotsPerDay*buildingCount*dutiesPerBuilding
+	slotIndex = buildingCount*dutiesPerBuilding
+
+	for k in core:
+		if k in coreData:
+			tt = coreData[k]
+
+			breaks = [[], [], [], [], []]
+			breaksFlat = []
+
+			for j in range(dayCount):
+				for i in range(dutySlotsPerDay - 1):
+					if  tt[j][i] == "" and ((i == 0) or (tt[j][i - 1] != "" and tt[j][i + 1] != "")):
+						breaks[j].append(k)
+						breaksFlat.append(dayIndex*j + slotIndex*i)
+
+			singleBreaksFlat[k] = breaksFlat			
+			singleBreaks[k] = breaks
+
+	# pprint(singleBreaksFlat)		
+
+def generateTabular(chromosome):
+	global days, slots, buildings
+
+	duties = []
+	for i in range(dayCount):
+		duties.append([])
+		for j in range(dutySlotsPerDay):
+			duties[i].append([])
+			for k in range(buildingCount):
+				duties[i][j].append([])
+				for l in range(dutiesPerBuilding):
+					duties[i][j][k].append("")
+
+	for i in range(chromosomeLength):
+		det = calculateDetails(i)
+		duties[det[0]][det[1]][det[2]][det[3]] = chromosome[i]
+
+	return duties
+
 def findFree(day, slot):
 	peeps = []
 
@@ -83,27 +155,35 @@ def findFree(day, slot):
 
 	return peeps		
 
-def getPerson(day, slot):
-	freePeeps = getFreePeople(day, slot)
-	return random.choice(freePeeps)
-
 def getFreePeople(day, slot):
 	peeps = findFree(day, slot)
 	return peeps
 
-def calculateDetails(n):
+def getPerson(day, slot):
+	freePeeps = getFreePeople(day, slot)
+	return random.choice(freePeeps)
+
+def generateDetails():
+	global details
+
 	dutyIndex = dutiesPerBuilding
 	bldgIndex = dutyIndex * buildingCount
 	slotIndex = bldgIndex * dutySlotsPerDay
 	dayIndex = slotIndex * dayCount
 
-	
-	day = int((n % dayIndex) / slotIndex)
-	slot = (int(n % slotIndex / bldgIndex))
-	bldg = (int(n % bldgIndex / dutyIndex))
-	duty = (int(n % dutyIndex))
+	for i in range(chromosomeLength):
+		day = int(i % dayIndex / slotIndex)
+		slot = int(i % slotIndex / bldgIndex)
+		bldg = int(i % bldgIndex / dutyIndex)
+		duty = int(i % dutyIndex)
+		details.append((day, slot, bldg, duty))
 
-	return (day, slot, bldg, duty)	
+	# pprint(details)	
+
+
+def calculateDetails(n):
+	global details
+	return details[n]
 
 def createEmptyChromosome():
 	return {"chromosome": [], "score": 0}
@@ -128,24 +208,58 @@ def generatePopulation(count):
 
 	return population	
 
-def calculateScore(chromosome):
+def intersection(l1, l2):
+	return list(set(l1) & set(l2))
+
+def checkClash(chromosome, person):
+	indices = [i for i, x in enumerate(chromosome) if x == person]
+	# pprint(indices)
+
 	score = 0
+
+	for i in sameSlot:
+		intersect = intersection(indices, i)
+		# print(intersect)
+		if len(intersect) > 1:
+			score += points["clash"] * len(intersect)
+	
+	return score
+
+
+def personFitness(chromosome, person, table):
+	score = 0
+	dayValid = True
+
+	if chromosome.count(person) <= maxSlots["total"]:
+		score += points["total"]
+
+	# for i in range(dayCount):
+	# 	dailyDutyCount = 0
+	# 	for j in range(dutySlotsPerDay):
+	# 		for k in range(buildingCount):
+	# 			for l in range(dutiesPerBuilding):
+	# 				if table[i][j][k][l] == person:
+	# 					dailyDutyCount += 1
+		
+	# 	if dailyDutyCount <= maxSlots["daily"]:
+	# 		score += points["daily"]
+
+	score += checkClash(chromosome, person)
 
 	for i in range(chromosomeLength):
 		det = calculateDetails(i)
-		day = det[0]
-		slot = det[1]
-		bldg = det[2]
-		duty = det[3]
 
-		# print(i, chromosome[i])
-		# print(day, slot, bldg, duty)
-		# print(day+1, slot+1, bldg+1, duty+1)
+	return score
 
-		if chromosome[i] in coreData and coreData[chromosome[i]][day][slot] == "":
-			score += points["free"]
-		else:
-			score -= points["free"]	
+def calculateScore(chromosome):
+	score = 0
+	table = generateTabular(chromosome)
+
+	for i in coreData:
+		score += personFitness(chromosome, i, table)
+
+	for i in range(chromosomeLength):
+		x = 1
 
 	return score
 
@@ -191,12 +305,15 @@ def selection(population):
 def crossover(p1, p2):
 	global chromosomeLength
 
-	p1MaterialLength = int(0.5 * chromosomeLength)
-	p2MaterialLength = int(0.5 * chromosomeLength)
-
+	chance = random.random()
+	crossoverLength = int(0.5 * chromosomeLength)
+	
 	child = createEmptyChromosome()
 
-	child["chromosome"] = p1["chromosome"][:p1MaterialLength] + p2["chromosome"][p1MaterialLength:]
+	if chance < 0.5:
+		child["chromosome"] = p1["chromosome"][:crossoverLength] + p2["chromosome"][crossoverLength:]
+	else:
+		child["chromosome"] = p2["chromosome"][:crossoverLength] + p1["chromosome"][crossoverLength:]	
 	child["score"] = calculateScore(child["chromosome"])
 
 	return child
@@ -270,27 +387,8 @@ def algorithm():
 	# print("Fittest = ")
 	# pprint(fittest)
 
-	dutyIndex = dutiesPerBuilding
-	bldgIndex = dutyIndex * buildingCount
-	slotIndex = bldgIndex * dutySlotsPerDay
-	dayIndex = slotIndex * dayCount
-
-	for i in range(chromosomeLength):
-		day = int((i % dayIndex) / slotIndex)
-		slot = (int(i % slotIndex / bldgIndex))
-		bldg = (int(i % bldgIndex / dutyIndex))
-		duty = (int(i % dutyIndex))
-
-		# print(i, chromosome[i])
-		# print(day, slot, bldg, duty)
-		# print(day+1, slot+1, bldg+1, duty+1)
-
-		if fittest[i] in coreData and coreData[fittest[i]][day][slot] == "":
-			print(fittest[i], " Free")
-		else:
-			print(fittest[i], " Not Free")	
-
-
+	print("Proper: ")
+	printProperly(fittest)
 			 
 def findAverage(population):
 	total = 0
@@ -307,20 +405,38 @@ def findFittest(population):
 	print("Fittest Score = ", population[0]["score"])
 	return population[0]
 
+def printProperly(chromosome):
+	global days, slots, buildings
+
+	duties = {}
+	for i in days:
+		duties[i] = {}
+		for j in slots:
+			duties[i][j] = {}
+			for k in buildings:
+				duties[i][j][k] = []
+				for l in range(2):
+					duties[i][j][k].append("")
+
+	for i in range(chromosomeLength):
+		det = calculateDetails(i)
+		duties[days[det[0]]][slots[det[1]]][buildings[det[2]]][det[3]] = chromosome[i]
+
+	pprint(duties)	
+
+def countDuties(chromosome):
+	x = 1
 
 ################################################## Functions ##################################################
 
 ################################################## Run ##################################################
 
+generateSameList()
+generateSingleBreakData()
+generateDetails()
 algorithm()
 
-# dutyIndex = dutiesPerBuilding
-# bldgIndex = dutyIndex * buildingCount
-# slotIndex = bldgIndex * dutySlotsPerDay
-# dayIndex = slotIndex * dayCount
-# for i in range(chromosomeLength):
-# 	det = list(calculateDetails(i))
-
-# 	print(i, det, det[0]*8*2*2 + det[1]*2*2 + det[2]*2 + det[3]*1)
-
+# cr = createChromosomeMaterial()
+# s = checkClash(cr, "Namit")
+# print(s)
 ################################################## Run ##################################################
