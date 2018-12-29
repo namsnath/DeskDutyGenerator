@@ -69,7 +69,7 @@ maxSlots = {
 
 points = {
 	# "free": 1.0,
-	"total": 0.25,			# Per person
+	"total": 10,			# Per person
 	"daily": 0.4,			# Per person, per day
 	"singleBreak": 5.0,		# Per person, per slot
 	"doubleBreak": 0.5,
@@ -117,8 +117,10 @@ def generateSingleBreakData():
 
 			for j in range(dayCount):
 				for i in range(dutySlotsPerDay - 1):
-					if  tt[j][i] == "" and ((i == 0) or (tt[j][i - 1] != "" and tt[j][i + 1] != "")):
-						breaksFlat.append(DAY_INDEX*j + SLOT_INDEX*i)
+					if  tt[j][i] == "" and (((i == 0) or (tt[j][i - 1] != "") and tt[j][i + 1] != "")) and i != 4:
+						start = DAY_INDEX*j + SLOT_INDEX*i
+						for l in range(dutiesPerBuilding * buildingCount):
+							breaksFlat.append(start + l)
 
 			singleBreaksFlat[k] = breaksFlat			
 
@@ -444,20 +446,21 @@ def algorithm():
 
 # Function to print the score split up of each person
 def printIndividualScores(chromosome):
-	print("Person\t\tCount\tDaily\tTotal\tClash\tVenue\tSingle")
+	print("Person\t\tCount\tDaily\tTotal\tClash\tVenue\tSingle\tSnglBrk")
 	for i in core:
 		count = chromosome.count(i)
-		daily = round(totalDailyScore(chromosome / points["daily"], i), 2)
-		total = round(totalSlotsScore(chromosome / points["total"], i), 2)
-		clash = round(slotClashScore(chromosome / points["clash"], i), 2)
-		venue = round(venueScore(chromosome / points["venue"], i), 2)
-		single = round(singleBreakScore(chromosome / points["singleBreak"], i), 2)
+		daily = round(totalDailyScore(chromosome, i) / points["daily"], 2)
+		total = round(totalSlotsScore(chromosome, i) / points["total"], 2)
+		clash = round(slotClashScore(chromosome, i) / points["clash"], 2)
+		venue = round(venueScore(chromosome, i) / points["venue"], 2)
+		single = round(singleBreakScore(chromosome, i) / points["singleBreak"], 2)
+		brk = singleBreaksFlat[i]
 		
 
 		if len(i) < 8:
-			print("%s\t\t%s\t%s\t%s\t%s\t%s\t%s" % (i, count, daily, total, clash, venue, single))
+			print("%s\t\t%s\t%s\t%s\t%s\t%s\t%s\t" % (i, count, daily, total, clash, venue, single), brk)
 		else:
-			print("%s\t%s\t%s\t%s\t%s\t%s\t%s" % (i, count, daily, total, clash, venue, single))
+			print("%s\t%s\t%s\t%s\t%s\t%s\t%s\t" % (i, count, daily, total, clash, venue, single), brk)
 
 # Function to find the average score of the population and print it			 
 def findAverage(population):
