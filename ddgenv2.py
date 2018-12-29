@@ -66,14 +66,14 @@ maxSlots = {
 
 points = {
 	# "free": 1.0,
-	"total": 0.4,
-	"daily": 0.5,
-	"singleBreak": 7.0,
+	"total": 0.25,			# Per person
+	"daily": 0.4,			# Per person, per day
+	"singleBreak": 3.0,		# Per person, per slot
 	"doubleBreak": 0.5,
 	# "fullDuty": 20.0,
 	# "empty": -20.0,
-	"venue": 1.0,
-	"clash": -4.0,
+	"venue": 0.35,			# Per person, per slot if class is immediately after duty
+	"clash": -3.0,			# Per person, per duty
 }
 
 
@@ -117,7 +117,17 @@ def generateSingleBreakData():
 						breaksFlat.append(DAY_INDEX*j + SLOT_INDEX*i)
 
 			singleBreaksFlat[k] = breaksFlat			
-	
+
+# Function to find the next class of the person
+def findNextClass(day, slot, person):
+	if person not in coreData:
+		return [-1, None]
+	t = coreData[person]
+	for i in range(slot + 1, slotsPerDay, 1):
+		if t[day][i] != "":
+			return [i, t[day][i]]
+	return [-1, None]
+
 # Generates a list of people free in the given day and slot
 # TODO make this into a static array to avoid recalculations
 def findFree(day, slot):
@@ -225,6 +235,35 @@ def totalSlotsScore(chromosome, person):
 		score += points["total"]
 	return score
 
+# Function to calculate score for the assigned venue
+def venueScore(chromosome, person):
+	score = 0
+	indices = [i for i, x in enumerate(chromosome) if x == person]
+
+	for i in indices:
+		det = calculateDetails(i)
+		day = det[0]
+		slot = det[1]
+		bldg = det[2]
+		nextDetails = findNextClass(day, slot, person)
+
+		if nextDetails[0] - slot == 1:
+			if buildings[bldg] == "SJT" and nextDetails[1] == "SJT":
+				score += points["venue"]
+			elif buildings[bldg] == "TT" and nextDetails[1] in ["CDMM", "MB", "GDN", "SMV", "CBMR", "TT"]:
+				score += points["venue"]
+	return score				
+
+# Function to calculate score for duties assigned in single Breaks
+def singleBreakScore(chromosome, person):
+	score = 0
+	indices = [i for i, x in enumerate(chromosome) if x == person]
+
+	for i in indices:
+		if i in singleBreaksFlat[person]:
+			score += points["singleBreak"]
+	return score		
+
 # Function to calculate the fitness of each person in the timetable (slot limit and slot clash)
 def personFitness(chromosome, person):
 	score = 0
@@ -233,6 +272,8 @@ def personFitness(chromosome, person):
 	score += totalSlotsScore(chromosome, person)
 	score += totalDailyScore(chromosome, person)
 	score += slotClashScore(chromosome, person)
+	score += venueScore(chromosome, person)
+	score += singleBreakScore(chromosome, person)
 
 	return score
 
@@ -380,11 +421,27 @@ def algorithm():
 	print("\n\nFinally, ")
 	findAverage(population)
 	fittest = findFittest(population)["chromosome"]
-	# print("Fittest = ")
-	# pprint(fittest)
-
 	print("Proper: ")
 	printProperly(fittest)
+
+	print("\nIndividual Scores: ")
+	printIndividualScores(fittest)
+
+# Function to print the score split up of each person
+def printIndividualScores(chromosome):
+	print("Person\t\tDaily\tTotal\tClash\tVenue\tSingle\tOverall")
+	for i in core:
+		daily = round(totalDailyScore(chromosome, i), 2)
+		total = round(totalSlotsScore(chromosome, i), 2)
+		clash = round(slotClashScore(chromosome, i), 2)
+		venue = round(venueScore(chromosome, i), 2)
+		single = round(singleBreakScore(chromosome, i), 2)
+		overall = daily + total + clash + venue + single
+
+		if len(i) < 8:
+			print("%s\t\t%s\t%s\t%s\t%s\t%s\t%s" % (i, daily, total, clash, venue, single, overall))
+		else:
+			print("%s\t%s\t%s\t%s\t%s\t%s\t%s" % (i, daily, total, clash, venue, single, overall))
 
 # Function to find the average score of the population and print it			 
 def findAverage(population):
@@ -421,7 +478,7 @@ def printProperly(chromosome):
 		det = calculateDetails(i)
 		duties[days[det[0]]][slots[det[1]]][buildings[det[2]]][det[3]] = chromosome[i]
 
-	pprint(duties)	
+	pprint(duties, width=160)	
 
 ################################################## Functions ##################################################
 
