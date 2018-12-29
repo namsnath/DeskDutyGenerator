@@ -2,6 +2,7 @@ import numpy
 from pprint import pprint
 import random, re, json
 from collections import Counter
+import statistics
 
 ################################################## Doodling ##################################################
 
@@ -50,6 +51,8 @@ core = ['Atul', 'Ayush', 'Charu', 'Kabiir', 'Krityaan', 'Manisha', 'Namit', 'Pav
 		'Aban', 'Aradhita', 'Bhavishya', 'Chinmay', 'David', 'Devam', 'Fardeen', 'Gauri', 'Kuhoo', 'Lakshay', 'Manan', 'Prajeeth', 'Rishit', 'Rohan', 'Ruchica', 
 		'Sanjana', 'SauravH', 'Siddharth', 'Suranjan', 'Taarussh', 'Tajendar', 'Tanya', 'Thiru', 'Vaishnavi']
 
+random.shuffle(core)
+
 data = open("coreData.txt")
 coreData = json.loads(data.read())
 
@@ -68,12 +71,13 @@ points = {
 	# "free": 1.0,
 	"total": 0.25,			# Per person
 	"daily": 0.4,			# Per person, per day
-	"singleBreak": 3.0,		# Per person, per slot
+	"singleBreak": 5.0,		# Per person, per slot
 	"doubleBreak": 0.5,
 	# "fullDuty": 20.0,
 	# "empty": -20.0,
-	"venue": 0.35,			# Per person, per slot if class is immediately after duty
+	"venue": 0.5,			# Per person, per slot if class is immediately after duty
 	"clash": -3.0,			# Per person, per duty
+	"dutySD": -7.0,
 }
 
 
@@ -277,6 +281,17 @@ def personFitness(chromosome, person):
 
 	return score
 
+def dutyCountScore(chromosome):
+	score = 0
+	count = []
+
+	for i in coreData:
+		count.append(chromosome.count(i))
+
+	sd = statistics.stdev(count)
+	score += sd * points["dutySD"]
+	return score
+
 # Function to calculate the total fitness of the chromosome
 def calculateScore(chromosome):
 	score = 0
@@ -284,8 +299,7 @@ def calculateScore(chromosome):
 	for i in coreData:
 		score += personFitness(chromosome, i)
 
-	for i in range(chromosomeLength):
-		x = 1
+	score += dutyCountScore(chromosome)
 
 	return score
 
@@ -409,6 +423,7 @@ def algorithm():
 
 	# while len(population) > 2:
 	for i in range(GENERATIONS):
+		random.shuffle(core)
 		print("\nGENERATION #", i)
 		
 		population = generation(population)
@@ -429,19 +444,20 @@ def algorithm():
 
 # Function to print the score split up of each person
 def printIndividualScores(chromosome):
-	print("Person\t\tDaily\tTotal\tClash\tVenue\tSingle\tOverall")
+	print("Person\t\tCount\tDaily\tTotal\tClash\tVenue\tSingle")
 	for i in core:
-		daily = round(totalDailyScore(chromosome, i), 2)
-		total = round(totalSlotsScore(chromosome, i), 2)
-		clash = round(slotClashScore(chromosome, i), 2)
-		venue = round(venueScore(chromosome, i), 2)
-		single = round(singleBreakScore(chromosome, i), 2)
-		overall = daily + total + clash + venue + single
+		count = chromosome.count(i)
+		daily = round(totalDailyScore(chromosome / points["daily"], i), 2)
+		total = round(totalSlotsScore(chromosome / points["total"], i), 2)
+		clash = round(slotClashScore(chromosome / points["clash"], i), 2)
+		venue = round(venueScore(chromosome / points["venue"], i), 2)
+		single = round(singleBreakScore(chromosome / points["singleBreak"], i), 2)
+		
 
 		if len(i) < 8:
-			print("%s\t\t%s\t%s\t%s\t%s\t%s\t%s" % (i, daily, total, clash, venue, single, overall))
+			print("%s\t\t%s\t%s\t%s\t%s\t%s\t%s" % (i, count, daily, total, clash, venue, single))
 		else:
-			print("%s\t%s\t%s\t%s\t%s\t%s\t%s" % (i, daily, total, clash, venue, single, overall))
+			print("%s\t%s\t%s\t%s\t%s\t%s\t%s" % (i, count, daily, total, clash, venue, single))
 
 # Function to find the average score of the population and print it			 
 def findAverage(population):
