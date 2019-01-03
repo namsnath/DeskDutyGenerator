@@ -1,4 +1,3 @@
-import numpy
 from pprint import pprint
 import random, re, json
 from collections import Counter
