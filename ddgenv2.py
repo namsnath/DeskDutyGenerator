@@ -30,7 +30,7 @@ SLOT_INDEX = buildingCount * dutiesPerBuilding
 BLDG_INDEX = dutiesPerBuilding
 DUTY_INDEX = 1
 
-POPULATION_SIZE = 8000
+POPULATION_SIZE = 4000
 GENERATIONS = 40
 CHILDREN_MULTIPLIER = 0.4
 chromosomeLength = dutySlotsPerDay * dayCount * buildingCount * dutiesPerBuilding
@@ -68,15 +68,15 @@ maxSlots = {
 
 points = {
 	# "free": 1.0,
-	"total": 10,			# Per person
+	"total": 1,			# Per person
 	"daily": 0.4,			# Per person, per day
 	"singleBreak": 5.0,		# Per person, per slot
 	"doubleBreak": 0.5,
 	# "fullDuty": 20.0,
 	# "empty": -20.0,
 	"venue": 0.5,			# Per person, per slot if class is immediately after duty
-	"clash": -3.0,			# Per person, per duty
-	"dutySD": -7.0,
+	"clash": -5.0,			# Per person, per duty
+	"dutySD": -7.0,		# Per chromosome
 }
 
 
@@ -437,6 +437,9 @@ def algorithm():
 	print("\n\nFinally, ")
 	findAverage(population)
 	fittest = findFittest(population)["chromosome"]
+	print("Duty Count Score = %s" % (dutyCountScore(fittest)))
+	
+	core.sort()
 	print("Proper: ")
 	printProperly(fittest)
 
