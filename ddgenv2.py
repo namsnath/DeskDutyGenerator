@@ -20,7 +20,7 @@ ______________________________________________________
 ################################################## Constants ##################################################
 
 slotsPerDay = 11
-dutySlotsPerDay = 8
+dutySlotsPerDay = 9
 dayCount = 5
 buildingCount = 2
 dutiesPerBuilding = 2
@@ -30,7 +30,7 @@ SLOT_INDEX = buildingCount * dutiesPerBuilding
 BLDG_INDEX = dutiesPerBuilding
 DUTY_INDEX = 1
 
-POPULATION_SIZE = 4000
+POPULATION_SIZE = 8000
 GENERATIONS = 40
 CHILDREN_MULTIPLIER = 0.4
 chromosomeLength = dutySlotsPerDay * dayCount * buildingCount * dutiesPerBuilding
@@ -38,15 +38,15 @@ chromosomeLength = dutySlotsPerDay * dayCount * buildingCount * dutiesPerBuildin
 details = []
 
 days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
-slots = ["8-9", "9-10", "10-11", "11-12", "12-1", "2-3", "3-4", "4-5"]
+slots = ["8-9", "9-10", "10-11", "11-12", "12-1", "2-3", "3-4", "4-5", "5-6"]
 buildings = ["SJT", "TT"]
 duties = [1, 2]
 
-seniorCore = ['Atul', 'Ayush', 'Charu', 'Kabiir', 'Krityaan', 'Manisha', 'Namit', 'Pavithra', 'Rishab', 'Saksham', 'Sakshi', 'Sarthak', 'Saurav', 'Simran', 'Sonal']
+seniorCore = ['Atul', 'Ayush', 'Charu', 'Kabiir', 'Krityaan', 'Manisha', 'Namit', 'Rishab', 'Saksham', 'Sakshi', 'Sarthak', 'Saurav', 'Simran', 'Sonal']
 juniorCore = ['Aban', 'Aradhita', 'Bhavishya', 'Chinmay', 'David', 'Devam', 'Fardeen', 'Gauri', 'Kuhoo', 'Lakshay', 'Manan', 'Prajeeth', 'Rama', 'Rishit', 'Rohan', 'Ruchica', 
 			'Sanjana', 'SauravH', 'Siddharth', 'Suranjan', 'Taarussh', 'Tajendar', 'Tanya', 'Thiru', 'Vaishnavi']
 
-core = ['Atul', 'Ayush', 'Charu', 'Kabiir', 'Krityaan', 'Manisha', 'Namit', 'Pavithra', 'Rishab', 'Saksham', 'Sakshi', 'Sarthak', 'Saurav', 'Simran', 'Sonal',
+core = ['Atul', 'Ayush', 'Charu', 'Kabiir', 'Krityaan', 'Manisha', 'Namit', 'Rishab', 'Saksham', 'Sakshi', 'Sarthak', 'Saurav', 'Simran', 'Sonal',
 		'Aban', 'Aradhita', 'Bhavishya', 'Chinmay', 'David', 'Devam', 'Fardeen', 'Gauri', 'Kuhoo', 'Lakshay', 'Manan', 'Prajeeth', 'Rama','Rishit', 'Rohan', 'Ruchica', 
 		'Sanjana', 'SauravH', 'Siddharth', 'Suranjan', 'Taarussh', 'Tajendar', 'Tanya', 'Thiru', 'Vaishnavi']
 
@@ -96,13 +96,13 @@ def generateSameList():
 	while i < chromosomeLength:
 		slots = [j for j in range(i, i + SLOT_INDEX)]
 		sameSlot.append(slots)
-		i += 4
+		i += buildingCount * dutiesPerBuilding
 
 	i = 0
 	while i < chromosomeLength:
 		d = [j for j in range(i, i + DAY_INDEX)]
 		sameDay.append(d)
-		i += 32	
+		i += buildingCount * dutiesPerBuilding * slotsPerDay
 
 	# pprint(sameSlot)
 	# pprint(sameDay)
