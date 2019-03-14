@@ -267,7 +267,7 @@ def singleBreakScore(chromosome, person):
 	for i in indices:
 		if i in singleBreaksFlat[person]:
 			score += points["singleBreak"]
-	return score		
+	return score			
 
 # Function to calculate the fitness of each person in the timetable (slot limit and slot clash)
 def personFitness(chromosome, person):
