@@ -76,6 +76,7 @@ points = {
 	# "empty": -20.0,
 	"venue": 0.5,			# Per person, per slot if class is immediately after duty
 	"clash": -5.0,			# Per person, per duty
+	"avoidableClash": -10.0,	# With clash. Used if >4 people available but clash happens.
 	"dutySD": -7.0,		# Per chromosome
 }
 
@@ -209,15 +210,24 @@ def intersection(l1, l2):
 
 # Function to calculate the score for clashes in the duty assignment 
 # Clarification: places where the same person has multiple duties in the same slot
+# Edit: Added condition to do slot clash scoring only if there are more than 4 people free in the slot. This should solve the problem of clashes even though someone else is free.
 def slotClashScore(chromosome, person):
 	indices = [i for i, x in enumerate(chromosome) if x == person]
 	
 	score = 0
 
 	for i in sameSlot:
+		# Details for any of the slots in the current sameSlot list.
+		det = calculateDetails(i[0])	
+		day = det[0]
+		slot = det[1]
+
+		personsFree = getFreePeople(det[0], det[1])
 		intersect = intersection(indices, i)
-		if len(intersect) > 1:
+
+		if len(intersect) > 1 and len(personsFree) > 4:
 			score += points["clash"] * len(intersect)
+			score += points["avoidableClash"] * (len(personsFree) - len(intersect))
 	
 	return score
 
@@ -268,6 +278,15 @@ def singleBreakScore(chromosome, person):
 		if i in singleBreaksFlat[person]:
 			score += points["singleBreak"]
 	return score			
+
+# Function to calculate score for a duty based on how many people are free. If there is a repeat with > 4 people free, lower score.
+def OtherFreeScore(chromosome, person):
+	score = 0
+	indices = [i for i, x in enumerate(chromosome) if x == person]
+
+
+
+	return score
 
 # Function to calculate the fitness of each person in the timetable (slot limit and slot clash)
 def personFitness(chromosome, person):
