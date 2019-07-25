@@ -19,11 +19,16 @@ ______________________________________________________
 
 ################################################## Constants ##################################################
 
+days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+slots = ["8-9", "9-10", "10-11", "11-12", "12-1", "2-3", "3-4", "4-5", "5-6"]
+buildings = ["SJT", "TT"]
+duties = [1, 2]
+
 slotsPerDay = 11
-dutySlotsPerDay = 9
-dayCount = 5
-buildingCount = 2
-dutiesPerBuilding = 2
+dutySlotsPerDay = len(slots)
+dayCount = len(days)
+buildingCount = len(buildings)
+dutiesPerBuilding = len(duties)
 
 DAY_INDEX = dutySlotsPerDay * buildingCount * dutiesPerBuilding
 SLOT_INDEX = buildingCount * dutiesPerBuilding
@@ -37,23 +42,10 @@ chromosomeLength = dutySlotsPerDay * dayCount * buildingCount * dutiesPerBuildin
 
 details = []
 
-days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
-slots = ["8-9", "9-10", "10-11", "11-12", "12-1", "2-3", "3-4", "4-5", "5-6"]
-buildings = ["SJT", "TT"]
-duties = [1, 2]
-
-seniorCore = ['Atul', 'Ayush', 'Charu', 'Kabiir', 'Krityaan', 'Manisha', 'Namit', 'Rishab', 'Saksham', 'Sakshi', 'Sarthak', 'Saurav', 'Simran', 'Sonal']
-juniorCore = ['Aban', 'Aradhita', 'Bhavishya', 'Chinmay', 'David', 'Devam', 'Fardeen', 'Gauri', 'Kuhoo', 'Lakshay', 'Manan', 'Prajeeth', 'Rama', 'Rishit', 'Rohan', 'Ruchica', 
-			'Sanjana', 'SauravH', 'Siddharth', 'Suranjan', 'Taarussh', 'Tajendar', 'Tanya', 'Thiru', 'Vaishnavi']
-
-core = ['Atul', 'Ayush', 'Charu', 'Kabiir', 'Krityaan', 'Manisha', 'Namit', 'Rishab', 'Saksham', 'Sakshi', 'Sarthak', 'Saurav', 'Simran', 'Sonal',
-		'Aban', 'Aradhita', 'Bhavishya', 'Chinmay', 'David', 'Devam', 'Fardeen', 'Gauri', 'Kuhoo', 'Lakshay', 'Manan', 'Prajeeth', 'Rama','Rishit', 'Rohan', 'Ruchica', 
-		'Sanjana', 'SauravH', 'Siddharth', 'Suranjan', 'Taarussh', 'Tajendar', 'Tanya', 'Thiru', 'Vaishnavi']
-
-random.shuffle(core)
-
 data = open("coreData.txt")
 coreData = json.loads(data.read())
+core = list(dict.keys(coreData))
+random.shuffle(core)
 
 singleBreaks = {i: None for i in core}
 singleBreaksFlat = {i: None for i in core}
@@ -222,10 +214,10 @@ def slotClashScore(chromosome, person):
 		day = det[0]
 		slot = det[1]
 
-		personsFree = getFreePeople(det[0], det[1])
+		personsFree = getFreePeople(day, slot)
 		intersect = intersection(indices, i)
 
-		if len(intersect) > 1 and len(personsFree) > 4:
+		if len(intersect) > 1 and len(personsFree) >= 4:
 			score += points["clash"] * len(intersect)
 			score += points["avoidableClash"] * (len(personsFree) - len(intersect))
 	
@@ -279,19 +271,9 @@ def singleBreakScore(chromosome, person):
 			score += points["singleBreak"]
 	return score			
 
-# Function to calculate score for a duty based on how many people are free. If there is a repeat with > 4 people free, lower score.
-def OtherFreeScore(chromosome, person):
-	score = 0
-	indices = [i for i, x in enumerate(chromosome) if x == person]
-
-
-
-	return score
-
 # Function to calculate the fitness of each person in the timetable (slot limit and slot clash)
 def personFitness(chromosome, person):
 	score = 0
-	dayValid = True
 
 	score += totalSlotsScore(chromosome, person)
 	score += totalDailyScore(chromosome, person)
