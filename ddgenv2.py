@@ -316,11 +316,6 @@ def calculatePopulationScores(population):
 
 		score = calculateScore(data["chromosome"])
 		population[i]["score"] = score
-		avg += score
-		# print(i, score)
-
-	avg /= len(population)
-	print("Average = ", avg)
 
 	return population
 
@@ -419,12 +414,17 @@ def algorithm():
 	global POPULATION_SIZE
 	global GENERATIONS
 
+	print("\nGENERATION #0")
 	population = generatePopulation(POPULATION_SIZE)
 	population = calculatePopulationScores(population)
 
+	print("Population Length = ", len(population))
+	findAverage(population)
+	findFittest(population)	
+
 
 	# while len(population) > 2:
-	for i in range(GENERATIONS):
+	for i in range(1, GENERATIONS):
 		random.shuffle(core)
 		print("\nGENERATION #", i)
 		
@@ -441,7 +441,7 @@ def algorithm():
 	print("Duty Count Score = %s" % (dutyCountScore(fittest)))
 	
 	core.sort()
-	print("Proper: ")
+	print("\n\nProper: ")
 	printProperly(fittest)
 
 	print("\nIndividual Scores: ")
