@@ -2,6 +2,8 @@ from pprint import pprint
 import random, re, json
 from collections import Counter
 import statistics
+from tqdm import tqdm
+from copy import deepcopy
 
 ################################################## Doodling ##################################################
 
@@ -38,6 +40,10 @@ DUTY_INDEX = 1
 POPULATION_SIZE = 8000
 GENERATIONS = 40
 CHILDREN_MULTIPLIER = 0.4
+
+FIT_RETENTION = 0.3		# Percentage of fit population to be retained
+RANDOM_RETENTION = 0.2	# Percentage of random population to be selected
+
 chromosomeLength = dutySlotsPerDay * dayCount * buildingCount * dutiesPerBuilding
 
 details = []
@@ -306,7 +312,8 @@ def calculateScore(chromosome):
 	return score
 
 # Function to calculate the fitness of each chromosome in the population and display details
-def calculatePopulationScores(population):
+def calculatePopulationScores():
+	global population
 	avg = 0
 
 	maxLen = len(population)
@@ -321,22 +328,20 @@ def calculatePopulationScores(population):
 	return population
 
 # Function for selection of the population
-def selection(population):
-	newPopulation = []
+def selection():
+	global population
 
-	FIT_RETENTION = 0.3		# Percentage of fit population to be retained
-	RANDOM_RETENTION = 0.2	# Percentage of random population to be selected
+	populationCopy = deepcopy(population)
+	newPopulation = []
 
 	fitCount = int(FIT_RETENTION * len(population))
 	randCount = int(RANDOM_RETENTION * len(population))
 
-	population.sort(key=lambda k: k["score"], reverse=True)
-	
-	for i in range(fitCount):
-		newPopulation.append(population[i])
+	populationCopy.sort(key=lambda k: k["score"], reverse=True)
+	newPopulation = populationCopy[:fitCount]
 	
 	for i in range(randCount):
-		newPopulation.append(random.choice(population))
+		newPopulation.append(random.choice(populationCopy))
 
 	return newPopulation	
 
@@ -360,7 +365,9 @@ def crossover(p1, p2):
 
 # Function to initiate a crossover
 # Selects random parents and calls the crossover(...) function
-def doCrossover(population):
+def doCrossover():
+	global population
+
 	p1 = random.choice(population)
 	p2 = random.choice(population)
 
@@ -381,7 +388,9 @@ def mutation(item):
 
 # Function to select a random chromosome to mutate
 # Calls the mutation(...) function
-def doMutation(population):
+def doMutation():
+	global population
+
 	item = int(random.random() * len(population))
 	population[item] = mutation(population[item])
 
@@ -389,36 +398,47 @@ def doMutation(population):
 # Selection
 # Reproduction
 # Mutation of each child
+def generation():
+	global population
+
 	print('Proceeding through generation...')
 
 	print("\t- Selecting...")
+	selected = selection()
+	if not len(selected) > 0:	# No selections made
+		return
 
 	children = []
 	childrenCount = int(CHILDREN_MULTIPLIER * len(selected))
 
 	print("\t- Reproducing and Mutating...")
+	while len(children) < childrenCount:
+		child = mutation(doCrossover())
 		children.append(child)
 
 	newPopulation = selected + children
 
-	if not len(newPopulation) > 0:
-		return population
+	if not len(newPopulation) > 0:	# New population is empty
+		return
 
-	return newPopulation
+	population = newPopulation
 
 # Function to control the GA
 # Generates population and runs through the defined generations
 def algorithm():
 	global POPULATION_SIZE
 	global GENERATIONS
+	global population
 
 	print("Generating new Population...")
 	population = generatePopulation(POPULATION_SIZE)
-	population = calculatePopulationScores(population)
+
+	print("\n\nGENERATION #0")
+	calculatePopulationScores()
 
 	print("Population Length = ", len(population))
-	findAverage(population)
-	findFittest(population)	
+	findAverage()
+	findFittest()	
 
 
 	# while len(population) > 2:
@@ -426,16 +446,16 @@ def algorithm():
 		random.shuffle(core)
 		print("\nGENERATION #", i)
 		
-		population = generation(population)
-		calculatePopulationScores(population)
+		generation()
+		calculatePopulationScores()
 		print("Population Length = ", len(population))
 
-		findAverage(population)
-		findFittest(population)	
+		findAverage()
+		findFittest()	
 
 	print("\n\nFinally, ")
-	findAverage(population)
-	fittest = findFittest(population)["chromosome"]
+	findAverage()
+	fittest = findFittest()["chromosome"]
 	print("Duty Count Score = %s" % (dutyCountScore(fittest)))
 	
 	core.sort()
@@ -464,7 +484,8 @@ def printIndividualScores(chromosome):
 			print("%s\t%s\t%s\t%s\t%s\t%s\t%s\t" % (i, count, daily, total, clash, venue, single), brk)
 
 # Function to find the average score of the population and print it			 
-def findAverage(population):
+def findAverage():
+	global population
 	total = 0
 	for i in population:
 		total += i["score"]
@@ -473,7 +494,9 @@ def findAverage(population):
 	print("Average Score = ", avg)	
 
 # Function to find the fittest chromosome in the population
-def findFittest(population):
+def findFittest():
+	global population
+
 	population.sort(key=lambda k: k["score"], reverse=True)
 
 	# print("Fittest = ", population[0]["chromosome"])
