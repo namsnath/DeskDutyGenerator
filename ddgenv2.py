@@ -189,7 +189,7 @@ def createChromosomeMaterial():
 def generatePopulation(count):
 	population = []
 
-	for i in range(count):
+	for i in tqdm(range(count)):
 		cr = createEmptyChromosome()
 		cr["chromosome"] = createChromosomeMaterial()
 		population.append(cr)
@@ -311,7 +311,8 @@ def calculatePopulationScores(population):
 
 	maxLen = len(population)
 
-	for i in range(0, maxLen):
+	print('Calculating chromosome scores...')
+	for i in tqdm(range(0, maxLen)):
 		data = population[i]
 
 		score = calculateScore(data["chromosome"])
@@ -388,17 +389,14 @@ def doMutation(population):
 # Selection
 # Reproduction
 # Mutation of each child
-def generation(population):
-	selected = selection(population)
-	if not len(selected) > 0:
-		return population
+	print('Proceeding through generation...')
+
+	print("\t- Selecting...")
 
 	children = []
 	childrenCount = int(CHILDREN_MULTIPLIER * len(selected))
 
-	while len(children) <= childrenCount:
-		child = doCrossover(population)
-		child = mutation(child)
+	print("\t- Reproducing and Mutating...")
 		children.append(child)
 
 	newPopulation = selected + children
@@ -414,7 +412,7 @@ def algorithm():
 	global POPULATION_SIZE
 	global GENERATIONS
 
-	print("\nGENERATION #0")
+	print("Generating new Population...")
 	population = generatePopulation(POPULATION_SIZE)
 	population = calculatePopulationScores(population)
 
