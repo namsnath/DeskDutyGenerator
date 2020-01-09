@@ -51,6 +51,11 @@ details = []
 data = open("coreData.txt")
 coreData = json.loads(data.read())
 core = list(dict.keys(coreData))
+core.sort()
+
+print("# People = ", len(core))
+print(core)
+
 random.shuffle(core)
 
 singleBreaks = {i: None for i in core}
