@@ -21,16 +21,16 @@ ______________________________________________________
 
 ################################################## Constants ##################################################
 
-days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
-slots = ["8-9", "9-10", "10-11", "11-12", "12-1", "2-3", "3-4", "4-5", "5-6"]
-buildings = ["SJT", "TT"]
-duties = [1, 2]
+DAYS_LIST = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+SLOTS_LIST = ["8-9", "9-10", "10-11", "11-12", "12-1", "2-3", "3-4", "4-5", "5-6"]
+BUILDINGS_LIST = ["SJT", "TT"]
+DUTIES_LIST = [1, 2]
 
 slotsPerDay = 11
-dutySlotsPerDay = len(slots)
-dayCount = len(days)
-buildingCount = len(buildings)
-dutiesPerBuilding = len(duties)
+dutySlotsPerDay = len(SLOTS_LIST)
+dayCount = len(DAYS_LIST)
+buildingCount = len(BUILDINGS_LIST)
+dutiesPerBuilding = len(DUTIES_LIST)
 
 DAY_INDEX = dutySlotsPerDay * buildingCount * dutiesPerBuilding
 SLOT_INDEX = buildingCount * dutiesPerBuilding
@@ -44,51 +44,43 @@ CHILDREN_MULTIPLIER = 0.4
 FIT_RETENTION = 0.3		# Percentage of fit population to be retained
 RANDOM_RETENTION = 0.2	# Percentage of random population to be selected
 
-chromosomeLength = dutySlotsPerDay * dayCount * buildingCount * dutiesPerBuilding
+CHROMOSOME_LENGTH = dutySlotsPerDay * dayCount * buildingCount * dutiesPerBuilding
 
-details = []
+CHROMOSOME_GENE_DETAILS = []
 
 data = open("coreData.txt")
 coreData = json.loads(data.read())
-core = list(dict.keys(coreData))
-core.sort()
+CORE_LIST = list(dict.keys(coreData))
+CORE_LIST.sort()
 
-print("# People = ", len(core))
-print(core)
+print("# People = ", len(CORE_LIST))
+print(CORE_LIST)
 
-random.shuffle(core)
+random.shuffle(CORE_LIST)
 
-singleBreaks = {i: None for i in core}
-singleBreaksFlat = {i: None for i in core}
+singleBreaks = {i: None for i in CORE_LIST}
+singleBreaksFlat = {i: None for i in CORE_LIST}
 
 sameSlot = []
 sameDay = []
 
-maxSlots = {
+MAX_SLOTS_PER_PERSON = {
 	"total": 8,
 	"daily": 2
 }
 
-points = {
-	# "free": 1.0,
-	"total": 1,			# Per person
+WEIGHTS = {
+	"total": 1,				# Per person
 	"daily": 0.4,			# Per person, per day
 	"singleBreak": 7.0,		# Per person, per slot
 	"doubleBreak": 0.5,
-	# "fullDuty": 20.0,
-	# "empty": -20.0,
 	"venue": 0.5,			# Per person, per slot if class is immediately after duty
 	"clash": -5.0,			# Per person, per duty
 	"avoidableClash": -5.0,	# With clash. Used if >4 people available but clash happens.
-	"dutySD": -6.0,		# Per chromosome
+	"dutySD": -6.0,			# Per chromosome
 }
 
-
-
-highestScore = 0
-highest = 0
-population = []
-fit = []
+POPULATION_ARRAY = []
 
 ################################################## Constants ##################################################
 
@@ -97,13 +89,13 @@ fit = []
 # Function to generate the sameDay and sameSlot lists
 def generateSameList():
 	i = 0
-	while i < chromosomeLength:
+	while i < CHROMOSOME_LENGTH:
 		slots = [j for j in range(i, i + SLOT_INDEX)]
 		sameSlot.append(slots)
 		i += buildingCount * dutiesPerBuilding
 
 	i = 0
-	while i < chromosomeLength:
+	while i < CHROMOSOME_LENGTH:
 		d = [j for j in range(i, i + DAY_INDEX)]
 		sameDay.append(d)
 		i += buildingCount * dutiesPerBuilding * slotsPerDay
@@ -113,7 +105,7 @@ def generateSameList():
 
 # Function to generate data about the one-hour breaks of each person
 def generateSingleBreakData():
-	for k in core:
+	for k in CORE_LIST:
 		if k in coreData:
 			tt = coreData[k]
 			breaksFlat = []
@@ -142,7 +134,7 @@ def findNextClass(day, slot, person):
 def findFree(day, slot):
 	peeps = []
 
-	for i in core:
+	for i in CORE_LIST:
 		if i in coreData and coreData[i][day][slot] == "":
 			peeps.append(i)
 
@@ -160,26 +152,23 @@ def getPerson(day, slot):
 
 # Helper function to calculate the values for day, slot, bldg and duty for each gene
 def generateDetails():
-	global details
-
 	dutyIndex = dutiesPerBuilding
 	bldgIndex = dutyIndex * buildingCount
 	slotIndex = bldgIndex * dutySlotsPerDay
 	dayIndex = slotIndex * dayCount
 
-	for i in range(chromosomeLength):
+	for i in range(CHROMOSOME_LENGTH):
 		day = int(i % dayIndex / slotIndex)
 		slot = int(i % slotIndex / bldgIndex)
 		bldg = int(i % bldgIndex / dutyIndex)
 		duty = int(i % dutyIndex)
-		details.append((day, slot, bldg, duty))
+		CHROMOSOME_GENE_DETAILS.append((day, slot, bldg, duty))
 
-	# pprint(details)	
+	# pprint(CHROMOSOME_GENE_DETAILS)	
 
 # Function to return calculated details for day, slot, bldg, duty
-def calculateDetails(n):
-	global details
-	return details[n]
+def getGeneDetails(n):
+	return CHROMOSOME_GENE_DETAILS[n]
 
 # Function to initiate a chromosome
 def createEmptyChromosome():
@@ -190,22 +179,18 @@ def createChromosomeMaterial():
 	# length = dayCount * dutySlotsPerDay * buildingCount * dutiesPerBuilding
 
 	chromosome = []
-	for i in range(chromosomeLength):
-		det = calculateDetails(i)
+	for i in range(CHROMOSOME_LENGTH):
+		det = getGeneDetails(i)
 		chromosome.append(getPerson(det[0], det[1]))
 	
 	return chromosome
 
 # Generates the given number of chromosomes for the population
 def generatePopulation(count):
-	population = []
-
 	for i in tqdm(range(count)):
 		cr = createEmptyChromosome()
 		cr["chromosome"] = createChromosomeMaterial()
-		population.append(cr)
-
-	return population	
+		POPULATION_ARRAY.append(cr)
 
 # Returns the intersection of two lists
 def intersection(l1, l2):
@@ -221,7 +206,7 @@ def slotClashScore(chromosome, person):
 
 	for i in sameSlot:
 		# Details for any of the slots in the current sameSlot list.
-		det = calculateDetails(i[0])	
+		det = getGeneDetails(i[0])	
 		day = det[0]
 		slot = det[1]
 
@@ -229,8 +214,8 @@ def slotClashScore(chromosome, person):
 		intersect = intersection(indices, i)
 
 		if len(intersect) > 1 and len(personsFree) >= 4:
-			score += points["clash"] * len(intersect)
-			score += points["avoidableClash"] * (len(personsFree) - len(intersect))
+			score += WEIGHTS["clash"] * len(intersect)
+			score += WEIGHTS["avoidableClash"] * (len(personsFree) - len(intersect))
 	
 	return score
 
@@ -242,15 +227,15 @@ def totalDailyScore(chromosome, person):
 	for i in sameDay:
 		intersect = intersection(indices, i)
 
-		if len(intersect) <= maxSlots["daily"]:
-			score += points["daily"]
+		if len(intersect) <= MAX_SLOTS_PER_PERSON["daily"]:
+			score += WEIGHTS["daily"]
 	return score	
 
 # Function to calculate score for the maximum total slots limit
 def totalSlotsScore(chromosome, person):
 	score = 0
-	if chromosome.count(person) <= maxSlots["total"]:
-		score += points["total"]
+	if chromosome.count(person) <= MAX_SLOTS_PER_PERSON["total"]:
+		score += WEIGHTS["total"]
 	return score
 
 # Function to calculate score for the assigned venue
@@ -259,17 +244,17 @@ def venueScore(chromosome, person):
 	indices = [i for i, x in enumerate(chromosome) if x == person]
 
 	for i in indices:
-		det = calculateDetails(i)
+		det = getGeneDetails(i)
 		day = det[0]
 		slot = det[1]
 		bldg = det[2]
 		nextDetails = findNextClass(day, slot, person)
 
 		if nextDetails[0] - slot == 1:
-			if buildings[bldg] == "SJT" and nextDetails[1] == "SJT":
-				score += points["venue"]
-			elif buildings[bldg] == "TT" and nextDetails[1] in ["CDMM", "MB", "GDN", "SMV", "CBMR", "TT"]:
-				score += points["venue"]
+			if BUILDINGS_LIST[bldg] == "SJT" and nextDetails[1] == "SJT":
+				score += WEIGHTS["venue"]
+			elif BUILDINGS_LIST[bldg] == "TT" and nextDetails[1] in ["CDMM", "MB", "GDN", "SMV", "CBMR", "TT"]:
+				score += WEIGHTS["venue"]
 	return score				
 
 # Function to calculate score for duties assigned in single Breaks
@@ -279,7 +264,7 @@ def singleBreakScore(chromosome, person):
 
 	for i in indices:
 		if i in singleBreaksFlat[person]:
-			score += points["singleBreak"]
+			score += WEIGHTS["singleBreak"]
 	return score			
 
 # Function to calculate the fitness of each person in the timetable (slot limit and slot clash)
@@ -302,7 +287,7 @@ def dutyCountScore(chromosome):
 		count.append(chromosome.count(i))
 
 	sd = statistics.stdev(count)
-	score += sd * points["dutySD"]
+	score += sd * WEIGHTS["dutySD"]
 	return score
 
 # Function to calculate the total fitness of the chromosome
@@ -318,29 +303,22 @@ def calculateScore(chromosome):
 
 # Function to calculate the fitness of each chromosome in the population and display details
 def calculatePopulationScores():
-	global population
-	avg = 0
-
-	maxLen = len(population)
+	maxLen = len(POPULATION_ARRAY)
 
 	print('Calculating chromosome scores...')
 	for i in tqdm(range(0, maxLen)):
-		data = population[i]
+		data = POPULATION_ARRAY[i]
 
 		score = calculateScore(data["chromosome"])
-		population[i]["score"] = score
-
-	return population
+		POPULATION_ARRAY[i]["score"] = score
 
 # Function for selection of the population
 def selection():
-	global population
-
-	populationCopy = deepcopy(population)
+	populationCopy = deepcopy(POPULATION_ARRAY)
 	newPopulation = []
 
-	fitCount = int(FIT_RETENTION * len(population))
-	randCount = int(RANDOM_RETENTION * len(population))
+	fitCount = int(FIT_RETENTION * len(POPULATION_ARRAY))
+	randCount = int(RANDOM_RETENTION * len(POPULATION_ARRAY))
 
 	populationCopy.sort(key=lambda k: k["score"], reverse=True)
 	newPopulation = populationCopy[:fitCount]
@@ -353,10 +331,8 @@ def selection():
 # Function to crossover two parents in a simple 50-50 fashion.
 # TODO Edit to either alternate or do a different crossover mechanism
 def crossover(p1, p2):
-	global chromosomeLength
-
 	chance = random.random()
-	crossoverLength = int(0.5 * chromosomeLength)
+	crossoverLength = int(0.5 * CHROMOSOME_LENGTH)
 	
 	child = createEmptyChromosome()
 
@@ -371,10 +347,8 @@ def crossover(p1, p2):
 # Function to initiate a crossover
 # Selects random parents and calls the crossover(...) function
 def doCrossover():
-	global population
-
-	p1 = random.choice(population)
-	p2 = random.choice(population)
+	p1 = random.choice(POPULATION_ARRAY)
+	p2 = random.choice(POPULATION_ARRAY)
 
 	child = crossover(p1, p2)
 
@@ -383,8 +357,8 @@ def doCrossover():
 # Function to mutate a random gene in the chromosome
 # TODO add more mutations?
 def mutation(item):
-	geneNumber = int(random.random() * chromosomeLength)
-	det = calculateDetails(geneNumber)
+	geneNumber = int(random.random() * CHROMOSOME_LENGTH)
+	det = getGeneDetails(geneNumber)
 
 	item["chromosome"][geneNumber] = getPerson(det[0], det[1])
 	item["score"] = calculateScore(item["chromosome"])
@@ -394,17 +368,17 @@ def mutation(item):
 # Function to select a random chromosome to mutate
 # Calls the mutation(...) function
 def doMutation():
-	global population
+	global POPULATION_ARRAY
 
-	item = int(random.random() * len(population))
-	population[item] = mutation(population[item])
+	item = int(random.random() * len(POPULATION_ARRAY))
+	POPULATION_ARRAY[item] = mutation(POPULATION_ARRAY[item])
 
 # Function to proceed through a generation
 # Selection
 # Reproduction
 # Mutation of each child
 def generation():
-	global population
+	global POPULATION_ARRAY
 
 	print('Proceeding through generation...')
 
@@ -426,34 +400,28 @@ def generation():
 	if not len(newPopulation) > 0:	# New population is empty
 		return
 
-	population = newPopulation
+	POPULATION_ARRAY = newPopulation
 
 # Function to control the GA
 # Generates population and runs through the defined generations
 def algorithm():
-	global POPULATION_SIZE
-	global GENERATIONS
-	global population
-
 	print("Generating new Population...")
-	population = generatePopulation(POPULATION_SIZE)
+	generatePopulation(POPULATION_SIZE)
 
 	print("\n\nGENERATION #0")
 	calculatePopulationScores()
 
-	print("Population Length = ", len(population))
+	print("Population Length = ", len(POPULATION_ARRAY))
 	findAverage()
 	findFittest()	
 
-
-	# while len(population) > 2:
 	for i in range(1, GENERATIONS):
-		random.shuffle(core)
+		random.shuffle(CORE_LIST)
 		print("\nGENERATION #", i)
 		
 		generation()
 		calculatePopulationScores()
-		print("Population Length = ", len(population))
+		print("Population Length = ", len(POPULATION_ARRAY))
 
 		findAverage()
 		findFittest()	
@@ -463,7 +431,7 @@ def algorithm():
 	fittest = findFittest()["chromosome"]
 	print("Duty Count Score = %s" % (dutyCountScore(fittest)))
 	
-	core.sort()
+	CORE_LIST.sort()
 	print("\n\nProper: ")
 	printProperly(fittest)
 
@@ -473,13 +441,13 @@ def algorithm():
 # Function to print the score split up of each person
 def printIndividualScores(chromosome):
 	print("Person\t\tCount\tDaily\tTotal\tClash\tVenue\tSingle\tSnglBrk")
-	for i in core:
+	for i in CORE_LIST:
 		count = chromosome.count(i)
-		daily = round(totalDailyScore(chromosome, i) / points["daily"], 2)
-		total = round(totalSlotsScore(chromosome, i) / points["total"], 2)
-		clash = round(slotClashScore(chromosome, i) / points["clash"], 2)
-		venue = round(venueScore(chromosome, i) / points["venue"], 2)
-		single = round(singleBreakScore(chromosome, i) / points["singleBreak"], 2)
+		daily = round(totalDailyScore(chromosome, i) / WEIGHTS["daily"], 2)
+		total = round(totalSlotsScore(chromosome, i) / WEIGHTS["total"], 2)
+		clash = round(slotClashScore(chromosome, i) / WEIGHTS["clash"], 2)
+		venue = round(venueScore(chromosome, i) / WEIGHTS["venue"], 2)
+		single = round(singleBreakScore(chromosome, i) / WEIGHTS["singleBreak"], 2)
 		brk = singleBreaksFlat[i]
 		
 
@@ -490,41 +458,35 @@ def printIndividualScores(chromosome):
 
 # Function to find the average score of the population and print it			 
 def findAverage():
-	global population
 	total = 0
-	for i in population:
+	for i in POPULATION_ARRAY:
 		total += i["score"]
-	avg = total / len(population)
+	avg = total / len(POPULATION_ARRAY)
 
 	print("Average Score = ", avg)	
 
 # Function to find the fittest chromosome in the population
 def findFittest():
-	global population
+	POPULATION_ARRAY.sort(key=lambda k: k["score"], reverse=True)
 
-	population.sort(key=lambda k: k["score"], reverse=True)
-
-	# print("Fittest = ", population[0]["chromosome"])
-	print("Fittest Score = ", population[0]["score"])
-	return population[0]
+	print("Fittest Score = ", POPULATION_ARRAY[0]["score"])
+	return POPULATION_ARRAY[0]
 
 # Function to print the chromosome in human-readable format
 def printProperly(chromosome):
-	global days, slots, buildings
-
 	duties = {}
-	for i in days:
+	for i in DAYS_LIST:
 		duties[i] = {}
-		for j in slots:
+		for j in SLOTS_LIST:
 			duties[i][j] = {}
-			for k in buildings:
+			for k in BUILDINGS_LIST:
 				duties[i][j][k] = []
 				for l in range(2):
 					duties[i][j][k].append("")
 
-	for i in range(chromosomeLength):
-		det = calculateDetails(i)
-		duties[days[det[0]]][slots[det[1]]][buildings[det[2]]][det[3]] = chromosome[i]
+	for i in range(CHROMOSOME_LENGTH):
+		det = getGeneDetails(i)
+		duties[DAYS_LIST[det[0]]][SLOTS_LIST[det[1]]][BUILDINGS_LIST[det[2]]][det[3]] = chromosome[i]
 
 	pprint(duties, width=160)	
 
@@ -537,7 +499,4 @@ generateSingleBreakData()
 generateDetails()
 algorithm()
 
-# cr = createChromosomeMaterial()
-# s = slotClashScore(cr, "Namit")
-# print(s)
 ################################################## Run ##################################################
