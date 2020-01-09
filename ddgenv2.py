@@ -73,14 +73,14 @@ points = {
 	# "free": 1.0,
 	"total": 1,			# Per person
 	"daily": 0.4,			# Per person, per day
-	"singleBreak": 5.0,		# Per person, per slot
+	"singleBreak": 7.0,		# Per person, per slot
 	"doubleBreak": 0.5,
 	# "fullDuty": 20.0,
 	# "empty": -20.0,
 	"venue": 0.5,			# Per person, per slot if class is immediately after duty
 	"clash": -5.0,			# Per person, per duty
-	"avoidableClash": -10.0,	# With clash. Used if >4 people available but clash happens.
-	"dutySD": -7.0,		# Per chromosome
+	"avoidableClash": -5.0,	# With clash. Used if >4 people available but clash happens.
+	"dutySD": -6.0,		# Per chromosome
 }
 
 
