@@ -187,7 +187,7 @@ def createChromosomeMaterial():
 
 # Generates the given number of chromosomes for the population
 def generatePopulation(count):
-	for i in tqdm(range(count)):
+	for i in tqdm(range(count), desc="Generating Initial Population"):
 		cr = createEmptyChromosome()
 		cr["chromosome"] = createChromosomeMaterial()
 		POPULATION_ARRAY.append(cr)
@@ -305,8 +305,7 @@ def calculateScore(chromosome):
 def calculatePopulationScores():
 	maxLen = len(POPULATION_ARRAY)
 
-	print('Calculating chromosome scores...')
-	for i in tqdm(range(0, maxLen)):
+	for i in tqdm(range(0, maxLen), desc="Calculating Chromosome Fitness Scores"):
 		data = POPULATION_ARRAY[i]
 
 		score = calculateScore(data["chromosome"])
@@ -323,7 +322,7 @@ def selection():
 	populationCopy.sort(key=lambda k: k["score"], reverse=True)
 	newPopulation = populationCopy[:fitCount]
 	
-	for i in range(randCount):
+	for i in tqdm(range(randCount), desc="Selecting"):
 		newPopulation.append(random.choice(populationCopy))
 
 	return newPopulation	
@@ -382,7 +381,6 @@ def generation():
 
 	print('Proceeding through generation...')
 
-	print("\t- Selecting...")
 	selected = selection()
 	if not len(selected) > 0:	# No selections made
 		return
@@ -390,11 +388,9 @@ def generation():
 	children = []
 	childrenCount = int(CHILDREN_MULTIPLIER * len(selected))
 
-	print("\t- Reproducing and Mutating...")
-	while len(children) < childrenCount:
+	for i in tqdm(range(childrenCount), desc="Reproducing and Mutating"):
 		child = mutation(doCrossover())
 		children.append(child)
-
 	newPopulation = selected + children
 
 	if not len(newPopulation) > 0:	# New population is empty
@@ -405,7 +401,6 @@ def generation():
 # Function to control the GA
 # Generates population and runs through the defined generations
 def algorithm():
-	print("Generating new Population...")
 	generatePopulation(POPULATION_SIZE)
 
 	print("\n\nGENERATION #0")
