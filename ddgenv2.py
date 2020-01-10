@@ -330,7 +330,7 @@ def selection():
 	newPopulation = populationCopy[:fitCount]
 	
 	for i in tqdm(range(randCount), desc="Selecting"):
-		newPopulation.append(random.choice(populationCopy))
+		newPopulation.append(random.choice(populationCopy[fitCount:]))
 
 	return newPopulation	
 
