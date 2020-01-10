@@ -26,16 +26,27 @@ SLOTS_LIST = ["8-9", "9-10", "10-11", "11-12", "12-1", "2-3", "3-4", "4-5", "5-6
 BUILDINGS_LIST = ["SJT", "TT"]
 DUTIES_LIST = [1, 2]
 
-slotsPerDay = 11
-dutySlotsPerDay = len(SLOTS_LIST)
-dayCount = len(DAYS_LIST)
-buildingCount = len(BUILDINGS_LIST)
-dutiesPerBuilding = len(DUTIES_LIST)
+SLOTS_PER_DAY = 11
+SLOT_COUNT_FOR_DUTIES_PER_DAY = len(SLOTS_LIST)
+DAYS_COUNT = len(DAYS_LIST)
+BUILDING_COUNT = len(BUILDINGS_LIST)
+DUTY_COUNT_PER_BUILDING = len(DUTIES_LIST)
 
-DAY_INDEX = dutySlotsPerDay * buildingCount * dutiesPerBuilding
-SLOT_INDEX = buildingCount * dutiesPerBuilding
-BLDG_INDEX = dutiesPerBuilding
+# The number of genes to skip to get to the next values of: 
+# - Duty
+# - Building in same duty
+# - Slot in same building, duty
+# - Day in same slot, building, duty
 DUTY_INDEX = 1
+BLDG_INDEX = DUTY_COUNT_PER_BUILDING
+SLOT_INDEX = BLDG_INDEX * BUILDING_COUNT
+DAY_INDEX = SLOT_INDEX * SLOT_COUNT_FOR_DUTIES_PER_DAY
+
+# The number of genes under each section
+GENES_PER_DUTY = DUTY_COUNT_PER_BUILDING
+GENES_PER_BUILDING = GENES_PER_DUTY * BUILDING_COUNT
+GENES_PER_SLOT = GENES_PER_BUILDING * SLOT_COUNT_FOR_DUTIES_PER_DAY
+GENES_PER_DAY = GENES_PER_SLOT * DAYS_COUNT
 
 POPULATION_SIZE = 8000
 GENERATIONS = 40
@@ -44,25 +55,24 @@ CHILDREN_MULTIPLIER = 0.4
 FIT_RETENTION = 0.3		# Percentage of fit population to be retained
 RANDOM_RETENTION = 0.2	# Percentage of random population to be selected
 
-CHROMOSOME_LENGTH = dutySlotsPerDay * dayCount * buildingCount * dutiesPerBuilding
+CHROMOSOME_LENGTH = SLOT_COUNT_FOR_DUTIES_PER_DAY * DAYS_COUNT * BUILDING_COUNT * DUTY_COUNT_PER_BUILDING
 
 CHROMOSOME_GENE_DETAILS = []
 
-data = open("coreData.txt")
-coreData = json.loads(data.read())
-CORE_LIST = list(dict.keys(coreData))
+DATA_FILE = open("coreData.txt")
+CORE_DATA = json.loads(DATA_FILE.read())
+CORE_LIST = list(dict.keys(CORE_DATA))
 CORE_LIST.sort()
 
-print("# People = ", len(CORE_LIST))
-print(CORE_LIST)
+# print("# People = ", len(CORE_LIST))
+# print(CORE_LIST)
 
 random.shuffle(CORE_LIST)
 
-singleBreaks = {i: None for i in CORE_LIST}
-singleBreaksFlat = {i: None for i in CORE_LIST}
+SINGLE_BREAKS_LIST = {i: None for i in CORE_LIST}
 
-sameSlot = []
-sameDay = []
+SAME_SLOT_LIST = []
+SAME_DAY_LIST = []
 
 MAX_SLOTS_PER_PERSON = {
 	"total": 8,
@@ -91,40 +101,42 @@ def generateSameList():
 	i = 0
 	while i < CHROMOSOME_LENGTH:
 		slots = [j for j in range(i, i + SLOT_INDEX)]
-		sameSlot.append(slots)
-		i += buildingCount * dutiesPerBuilding
+		SAME_SLOT_LIST.append(slots)
+		i += BUILDING_COUNT * DUTY_COUNT_PER_BUILDING
 
 	i = 0
 	while i < CHROMOSOME_LENGTH:
 		d = [j for j in range(i, i + DAY_INDEX)]
-		sameDay.append(d)
-		i += buildingCount * dutiesPerBuilding * slotsPerDay
+		SAME_DAY_LIST.append(d)
+		i += BUILDING_COUNT * DUTY_COUNT_PER_BUILDING * SLOTS_PER_DAY
 
-	# pprint(sameSlot)
-	# pprint(sameDay)
+	# pprint(SAME_SLOT_LIST)
+	# pprint(SAME_DAY_LIST)
 
 # Function to generate data about the one-hour breaks of each person
 def generateSingleBreakData():
+	global SINGLE_BREAKS_LIST
+
 	for k in CORE_LIST:
-		if k in coreData:
-			tt = coreData[k]
+		if k in CORE_DATA:
+			tt = CORE_DATA[k]
 			breaksFlat = []
 
-			for j in range(dayCount):
-				for i in range(dutySlotsPerDay - 1):
-					if  tt[j][i] == "" and (((i == 0) or (tt[j][i - 1] != "") and tt[j][i + 1] != "")) and i != 4:
-						start = DAY_INDEX*j + SLOT_INDEX*i
-						for l in range(dutiesPerBuilding * buildingCount):
+			for i in range(DAYS_COUNT):
+				for j in range(SLOT_COUNT_FOR_DUTIES_PER_DAY - 1):
+					if  tt[i][j] == "" and (((j == 0) or (tt[i][j - 1] != "") and tt[i][j + 1] != "")) and j != 4:
+						start = DAY_INDEX*i + SLOT_INDEX*j
+						for l in range(DUTY_COUNT_PER_BUILDING * BUILDING_COUNT):
 							breaksFlat.append(start + l)
 
-			singleBreaksFlat[k] = breaksFlat			
+			SINGLE_BREAKS_LIST[k] = breaksFlat			
 
 # Function to find the next class of the person
 def findNextClass(day, slot, person):
-	if person not in coreData:
+	if person not in CORE_DATA:
 		return [-1, None]
-	t = coreData[person]
-	for i in range(slot + 1, slotsPerDay, 1):
+	t = CORE_DATA[person]
+	for i in range(slot + 1, SLOTS_PER_DAY, 1):
 		if t[day][i] != "":
 			return [i, t[day][i]]
 	return [-1, None]
@@ -135,7 +147,7 @@ def findFree(day, slot):
 	peeps = []
 
 	for i in CORE_LIST:
-		if i in coreData and coreData[i][day][slot] == "":
+		if i in CORE_DATA and CORE_DATA[i][day][slot] == "":
 			peeps.append(i)
 
 	return peeps		
@@ -152,16 +164,11 @@ def getPerson(day, slot):
 
 # Helper function to calculate the values for day, slot, bldg and duty for each gene
 def generateDetails():
-	dutyIndex = dutiesPerBuilding
-	bldgIndex = dutyIndex * buildingCount
-	slotIndex = bldgIndex * dutySlotsPerDay
-	dayIndex = slotIndex * dayCount
-
 	for i in range(CHROMOSOME_LENGTH):
-		day = int(i % dayIndex / slotIndex)
-		slot = int(i % slotIndex / bldgIndex)
-		bldg = int(i % bldgIndex / dutyIndex)
-		duty = int(i % dutyIndex)
+		day = int(i % GENES_PER_DAY / GENES_PER_SLOT)
+		slot = int(i % GENES_PER_SLOT / GENES_PER_BUILDING)
+		bldg = int(i % GENES_PER_BUILDING / GENES_PER_DUTY)
+		duty = int(i % GENES_PER_DUTY)
 		CHROMOSOME_GENE_DETAILS.append((day, slot, bldg, duty))
 
 	# pprint(CHROMOSOME_GENE_DETAILS)	
@@ -176,7 +183,7 @@ def createEmptyChromosome():
 
 # Function to populate the chromosome
 def createChromosomeMaterial():
-	# length = dayCount * dutySlotsPerDay * buildingCount * dutiesPerBuilding
+	# length = DAYS_COUNT * SLOT_COUNT_FOR_DUTIES_PER_DAY * BUILDING_COUNT * DUTY_COUNT_PER_BUILDING
 
 	chromosome = []
 	for i in range(CHROMOSOME_LENGTH):
@@ -204,7 +211,7 @@ def slotClashScore(chromosome, person):
 	
 	score = 0
 
-	for i in sameSlot:
+	for i in SAME_SLOT_LIST:
 		# Details for any of the slots in the current sameSlot list.
 		det = getGeneDetails(i[0])	
 		day = det[0]
@@ -224,7 +231,7 @@ def totalDailyScore(chromosome, person):
 	score = 0
 	indices = [i for i, x in enumerate(chromosome) if x == person]
 
-	for i in sameDay:
+	for i in SAME_DAY_LIST:
 		intersect = intersection(indices, i)
 
 		if len(intersect) <= MAX_SLOTS_PER_PERSON["daily"]:
@@ -263,7 +270,7 @@ def singleBreakScore(chromosome, person):
 	indices = [i for i, x in enumerate(chromosome) if x == person]
 
 	for i in indices:
-		if i in singleBreaksFlat[person]:
+		if i in SINGLE_BREAKS_LIST[person]:
 			score += WEIGHTS["singleBreak"]
 	return score			
 
@@ -283,7 +290,7 @@ def dutyCountScore(chromosome):
 	score = 0
 	count = []
 
-	for i in coreData:
+	for i in CORE_DATA:
 		count.append(chromosome.count(i))
 
 	sd = statistics.stdev(count)
@@ -294,7 +301,7 @@ def dutyCountScore(chromosome):
 def calculateScore(chromosome):
 	score = 0
 
-	for i in coreData:
+	for i in CORE_DATA:
 		score += personFitness(chromosome, i)
 
 	score += dutyCountScore(chromosome)
@@ -443,7 +450,7 @@ def printIndividualScores(chromosome):
 		clash = round(slotClashScore(chromosome, i) / WEIGHTS["clash"], 2)
 		venue = round(venueScore(chromosome, i) / WEIGHTS["venue"], 2)
 		single = round(singleBreakScore(chromosome, i) / WEIGHTS["singleBreak"], 2)
-		brk = singleBreaksFlat[i]
+		brk = SINGLE_BREAKS_LIST[i]
 		
 
 		if len(i) < 8:
