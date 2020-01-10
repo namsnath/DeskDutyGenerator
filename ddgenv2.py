@@ -352,9 +352,9 @@ def crossover(p1, p2):
 
 # Function to initiate a crossover
 # Selects random parents and calls the crossover(...) function
-def doCrossover():
-	p1 = random.choice(POPULATION_ARRAY)
-	p2 = random.choice(POPULATION_ARRAY)
+def doCrossover(selectedPopulation):
+	p1 = random.choice(selectedPopulation)
+	p2 = random.choice(selectedPopulation)
 
 	child = crossover(p1, p2)
 
@@ -396,7 +396,7 @@ def generation():
 	childrenCount = int(CHILDREN_MULTIPLIER * len(selected))
 
 	for i in tqdm(range(childrenCount), desc="Reproducing and Mutating"):
-		child = mutation(doCrossover())
+		child = mutation(doCrossover(selected))
 		children.append(child)
 	newPopulation = selected + children
 
