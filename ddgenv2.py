@@ -319,6 +319,7 @@ def calculatePopulationScores():
 		POPULATION_ARRAY[i]["score"] = score
 
 # Function for selection of the population
+# TODO Add better selection mechanisms in order to give preference to fit individuals
 def selection():
 	populationCopy = deepcopy(POPULATION_ARRAY)
 	newPopulation = []
