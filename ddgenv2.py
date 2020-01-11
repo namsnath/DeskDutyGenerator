@@ -67,9 +67,8 @@ CORE_LIST.sort()
 # print("# People = ", len(CORE_LIST))
 # print(CORE_LIST)
 
-random.shuffle(CORE_LIST)
-
 SINGLE_BREAKS_LIST = {i: None for i in CORE_LIST}
+FREE_PEOPLE_LIST = [ [ [] for k in range(SLOTS_PER_DAY) ] for j in range(DAYS_COUNT) ]
 
 SAME_SLOT_LIST = []
 SAME_DAY_LIST = []
@@ -131,6 +130,16 @@ def generateSingleBreakData():
 
 			SINGLE_BREAKS_LIST[k] = breaksFlat			
 
+# Function to generate a list of people free per slot
+def generateFreePeopleList():
+	global FREE_PEOPLE_LIST
+
+	for i in CORE_LIST:
+		for j in range(DAYS_COUNT):
+			for k in range(SLOTS_PER_DAY):
+				if CORE_DATA[i][j][k] == "":
+					FREE_PEOPLE_LIST[j][k].append(i)
+
 # Function to find the next class of the person
 def findNextClass(day, slot, person):
 	if person not in CORE_DATA:
@@ -141,26 +150,13 @@ def findNextClass(day, slot, person):
 			return [i, t[day][i]]
 	return [-1, None]
 
-# Generates a list of people free in the given day and slot
-# TODO make this into a static array to avoid recalculations
-def findFree(day, slot):
-	peeps = []
-
-	for i in CORE_LIST:
-		if i in CORE_DATA and CORE_DATA[i][day][slot] == "":
-			peeps.append(i)
-
-	return peeps		
-
 # Function to get the free people in the given day and slot
 def getFreePeople(day, slot):
-	peeps = findFree(day, slot)
-	return peeps
+	return FREE_PEOPLE_LIST[day][slot]
 
 # Function to return a random free person for the given day and slot
 def getPerson(day, slot):
-	freePeeps = getFreePeople(day, slot)
-	return random.choice(freePeeps)
+	return random.choice(FREE_PEOPLE_LIST[day][slot])
 
 # Helper function to calculate the values for day, slot, bldg and duty for each gene
 def generateDetails():
@@ -499,7 +495,9 @@ def printProperly(chromosome):
 
 generateSameList()
 generateSingleBreakData()
+generateFreePeopleList()
 generateDetails()
+random.shuffle(CORE_LIST)
 algorithm()
 
 ################################################## Run ##################################################
