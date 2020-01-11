@@ -440,7 +440,7 @@ def algorithm():
 
 # Function to print the score split up of each person
 def printIndividualScores(chromosome):
-	print("Person\t\tCount\tDaily\tTotal\tClash\tVenue\tSingle\tSnglBrk")
+	print("Person\t\tCount\tDaily\tTotal\tClash\tVenue\tSingle")
 	for i in CORE_LIST:
 		count = chromosome.count(i)
 		daily = round(totalDailyScore(chromosome, i) / WEIGHTS["daily"], 2)
@@ -452,9 +452,9 @@ def printIndividualScores(chromosome):
 		
 
 		if len(i) < 8:
-			print("%s\t\t%s\t%s\t%s\t%s\t%s\t%s\t" % (i, count, daily, total, clash, venue, single), brk)
+			print("%s\t\t%s\t%s\t%s\t%s\t%s\t%s" % (i, count, daily, total, clash, venue, single))
 		else:
-			print("%s\t%s\t%s\t%s\t%s\t%s\t%s\t" % (i, count, daily, total, clash, venue, single), brk)
+			print("%s\t%s\t%s\t%s\t%s\t%s\t%s" % (i, count, daily, total, clash, venue, single))
 
 # Function to find the average score of the population and print it			 
 def findAverage():
