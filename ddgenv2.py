@@ -216,9 +216,10 @@ def slotClashScore(chromosome, person):
 		personsFree = getFreePeople(day, slot)
 		intersect = intersection(indices, i)
 
-		if len(intersect) > 1 and len(personsFree) >= 4:
+		if len(intersect) > 1:
 			score += WEIGHTS["clash"] * len(intersect)
-			score += WEIGHTS["avoidableClash"] * (len(personsFree) - len(intersect))
+			if len(personsFree) >= 4:
+				score += WEIGHTS["avoidableClash"] * (len(personsFree) - 1)
 	
 	return score
 
