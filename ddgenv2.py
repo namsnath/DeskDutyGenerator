@@ -51,6 +51,7 @@ GENES_PER_DAY = GENES_PER_SLOT * DAYS_COUNT
 POPULATION_SIZE = 8000
 GENERATIONS = 40
 CHILDREN_MULTIPLIER = 0.4
+MUTATION_CHANCE=0.45	# Chance of mutation per chromosome
 
 FIT_RETENTION = 0.3		# Percentage of fit population to be retained
 RANDOM_RETENTION = 0.2	# Percentage of random population to be selected
@@ -373,8 +374,11 @@ def mutation(item):
 def doMutation():
 	global POPULATION_ARRAY
 
-	item = int(random.random() * len(POPULATION_ARRAY))
-	POPULATION_ARRAY[item] = mutation(POPULATION_ARRAY[item])
+	for individualNum in tqdm(range(len(POPULATION_ARRAY)), desc="Mutating"):
+		randomRoll = random.random()
+
+		if(randomRoll <= MUTATION_CHANCE):
+			POPULATION_ARRAY[individualNum] = mutation(POPULATION_ARRAY[individualNum])
 
 # Function to proceed through a generation
 # Selection
@@ -384,6 +388,11 @@ def generation():
 	global POPULATION_ARRAY
 
 	print('Proceeding through generation...')
+
+	# Random mutation can result in very varying results.
+	# Use with caution
+
+	doMutation()
 
 	selected = selection()
 	if not len(selected) > 0:	# No selections made
